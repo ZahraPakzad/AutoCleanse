@@ -20,7 +20,6 @@ start_time = time.time()
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-#################################################################################################################################################
 # Loading dataset
 df = pd.read_csv('~/dataset/categorical/adult.csv')
 

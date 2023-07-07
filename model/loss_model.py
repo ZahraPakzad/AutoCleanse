@@ -4,12 +4,12 @@ import torch.nn as nn
 def loss_CEMSE(input, outputs, continous_columns, categorical_columns, encoder, scaler):
     """
      @brief Calculates cross entropy loss and mean square error loss of a dataframe correspondingly to continous and categorical columns
-     @param input The input tensor which is a batch of dataframe rows
-     @param outputs The output which is the autoencoded input
-     @param continous_columns A list of continous column names
-     @param categorical_columns A list of categorical column names
-     @param encoder The encoder used to one-hot encode the categorical input values
-     @param scaler The scaler used to scale the continous input values
+     @param input: The input tensor which is a batch of dataframe rows
+     @param outputs: The output which is the autoencoded input
+     @param continous_columns: A list of continous column names
+     @param categorical_columns: A list of categorical column names
+     @param encoder: The encoder used to one-hot encode the categorical input values
+     @param scaler: The scaler used to scale the continous input values
      @return The combined CE loss and MSE loss
     """
     # Map categorical columns with onehot subcolumns

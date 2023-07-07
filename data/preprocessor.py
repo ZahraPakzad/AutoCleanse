@@ -2,8 +2,17 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 def dataPreprocessor(input_df,train_ratio,val_ratio,test_ratio,continous_columns,categorical_columns,scaler,onehotencoder):
-    # Split training, validation and test set
-
+    """
+     @brief Split dataset into training, validation and test set, then apply scaling and encoding to the columns
+     @param input_df: Input dataframe
+     @param train_ratio: float or int ratio of training data
+     @param val_ratio: float or int ratio of validation data
+     @param test_ratio: float or int ratio of test data
+     @param continous_columns: A list of continous column names
+     @param categorical_columns: A list of categorical column names
+     @param scaler: Scaler object
+     @param onehotencoder: Onehot encoder object
+    """
     # Calculate the sizes of train, validation, and test sets
     total_size = len(input_df)
     train_size = int(total_size * train_ratio)

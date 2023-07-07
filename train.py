@@ -3,6 +3,23 @@ from tqdm import tqdm
 from model.loss_model import loss_CEMSE
 
 def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loader,continous_columns,categorical_columns,onehotencoder,scaler,optimizer,scheduler,device):
+    """
+     @brief Autoencoder trainer
+     @param autoencoder: Autoencoder object
+     @param num_epochs: Number of training epochs 
+     @param batch_size: Traning batch size
+     @param patience: Number of epochs to wait before stopping the training process if validation loss does not improve
+     @param layers: A list specifying sizes of network layers
+     @param train_loader: Dataloader object containing train dataset
+     @param val_loader: Dataloader object containing validation dataset
+     @param continous_columns: A list of continous column names
+     @param categorical_columns: A list of categorical column names
+     @param onehotencoder: Onehot encoder object
+     @param scaler: Scaler object
+     @param optimizer: Optimizer object
+     @param scheduler: Scheduler object
+     @param device: Can be "cpu" or "cuda"
+    """
     best_loss = float('inf')
     best_state_dict = None
 

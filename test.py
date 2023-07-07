@@ -3,7 +3,19 @@ import pandas as pd
 from tqdm import tqdm
 from utils.utils import argmax,softmax
 
-def test(autoencoder,test_df,test_loader,batch_size,continous_columns,categorical_columns,onehotencoder,scaler,device):
+def clean(autoencoder,test_df,test_loader,batch_size,continous_columns,categorical_columns,onehotencoder,scaler,device):
+    """
+     @brief Data cleaning
+     @param autoencoder: Autoencoder object
+     @param test_df: Test dataframe
+     @param test_loader: Dataloader object containing test dataset
+     @param batch_size: Cleaning batch size 
+     @param continous_columns: A list of continous column names
+     @param categorical_columns: A list of categorical column names
+     @param onehotencoder: Onehot encoder object
+     @param scaler: Scaler object
+     @param device: can be "cpu" or "cuda"
+    """
     autoencoder.eval()
 
     clean_progress = tqdm(test_loader, desc=f'Clean progress', position=0, leave=True)

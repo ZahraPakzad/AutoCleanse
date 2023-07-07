@@ -15,11 +15,11 @@ from IPython.display import display
 def softmax(input, encoder, continous_columns, categorical_columns, device):
     """
      @brief Computes softmax activations of a dataframe correspondingly to continous and categorical columns
-     @param input The input to the layer.
-     @param encoder The encoder used to encode the input. Can be None if there is no encoder
-     @param continous_columns
-     @param categorical_columns The categorical columns in the layer.
-     @param device Can be CPU or CUDA
+     @param input: The input tensor
+     @param encoder: The onehot encoder used to encode the input
+     @param continous_columns: A list of continous column names
+     @param categorical_columns: A list of categorical column names
+     @param device: can be "cpu" or "cuda"
     """
     # Map categorical columns with onehot subcolumns
     encoded_columns = encoder.categories_
@@ -44,11 +44,11 @@ def softmax(input, encoder, continous_columns, categorical_columns, device):
 def argmax(input, encoder, continous_columns, categorical_columns, device):
     """
      @brief Computes argmax activations of a dataframe correspondingly to continous and categorical columns
-     @param input The input to the layer.
-     @param encoder The encoder used to encode the input. Can be None if there is no encoder
-     @param continous_columns
-     @param categorical_columns The categorical columns in the layer.
-     @param device Can be CPU or CUDA
+     @param input: The input tensor
+     @param encoder: The onehot encoder used to encode the input
+     @param continous_columns: A list of continous column names
+     @param categorical_columns: A list of categorical column names
+     @param device: Can be "cpu" or "cuda"
     """
     # Map categorical columns with onehot subcolumns
     encoded_columns = encoder.categories_

@@ -3,21 +3,21 @@ import torch.nn as nn
 
 class Autoencoder(nn.Module):
     
-    def __init__(self, layer_sizes, dropout):
+    def __init__(self, layers, dropout):
         """
          @brief Initialize Autoencoder with given layer sizes and dropout. This is the base constructor for Autoencoder. You can override it in your subclass if you want to customize the layers.
-         @param layer_sizes List of size of layers to use
-         @param dropout List of ( drop_layer, drop_chance )
+         @param layers: List of size of layers to use
+         @param dropout: List of ( drop_layer, drop_chance )
         """
         super(Autoencoder, self).__init__()
-        self.layer_sizes = layer_sizes
-        self.num_layers = len(layer_sizes)
+        self.layer_sizes = layers
+        self.num_layers = len(layers)
 
         # Encoder layers
         encoder_layers = []
         # Add linear and reLU layers to the encoder.
         for i in range(self.num_layers - 1):
-            encoder_layers.append(nn.Linear(layer_sizes[i], layer_sizes[i + 1]))
+            encoder_layers.append(nn.Linear(layers[i], layers[i + 1]))
             encoder_layers.append(nn.ReLU())
             # Add dropout to encoder layer.
             for drop_layer, drop_chance in dropout:
@@ -28,9 +28,9 @@ class Autoencoder(nn.Module):
         # Decoder layers
         decoder_layers = []
         for i in range(self.num_layers - 1, 0, -1):
-            decoder_layers.append(nn.Linear(layer_sizes[i], layer_sizes[i - 1]))
+            decoder_layers.append(nn.Linear(layers[i], layers[i - 1]))
             decoder_layers.append(nn.ReLU())
-        decoder_layers.append(nn.Linear(layer_sizes[0], layer_sizes[0]))
+        decoder_layers.append(nn.Linear(layers[0], layers[0]))
         self.decoder = nn.Sequential(*decoder_layers)
 
     def forward(self, x):
@@ -41,9 +41,8 @@ class Autoencoder(nn.Module):
 def build_autoencoder(layers,dropout):
     """
      @brief Build autoencoder encoder decoder and optimizer.
-     @param layers Number of layers to use
-     @param dropout Dropout specification for the architecture
-     @return A tuple of : py : class : ` torch. autoencoder. Autoencoder ` : py : class : ` torch. encoder. Encoder
+     @param layers: A list specifying the number of layers and their respective size
+     @param dropout: A list of tupple specifying dropout layers position and their respective dropout chance
     """
     autoencoder = Autoencoder(layers,dropout)
     encoder = autoencoder.encoder
