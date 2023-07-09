@@ -13,7 +13,7 @@ from tqdm import tqdm
 from model.loss_model import loss_CEMSE
 from data.preprocessor import dataPreprocessor
 from train import train
-from test import test
+from test import clean, anonymize
 import time
 
 start_time = time.time()
@@ -80,15 +80,24 @@ train(autoencoder=autoencoder,
       scheduler=scheduler,
       device=device)
 
-test(autoencoder=autoencoder,
-     test_loader=test_loader,
-     test_df=X_test,
-     batch_size=batch_size,
-     continous_columns=continous_columns, 
-     categorical_columns=categorical_columns, 
-     onehotencoder=onehotencoder, 
-     scaler=scaler,
-     device=device)
+# cleaned_data = clean(autoencoder=autoencoder,
+#                      test_loader=test_loader,
+#                      test_df=X_test,
+#                      batch_size=batch_size,
+#                      continous_columns=continous_columns, 
+#                      categorical_columns=categorical_columns, 
+#                      onehotencoder=onehotencoder, 
+#                      device=device)
+
+anonymized_data = anonymize(encoder=encoder,
+                            test_df=X_test,
+                            test_loader=test_loader,
+                            batch_size=batch_size,
+                            device=device)                     
+
+# print(cleaned_data.round(decimals=5).head())
+print(anonymized_data.round(decimals=5).head())
+# print(test_df.head())
 
 end_time = time.time()
 execution_time = end_time - start_time

@@ -3,17 +3,16 @@ import pandas as pd
 from tqdm import tqdm
 from utils.utils import argmax,softmax
 
-def clean(autoencoder,test_df,test_loader,batch_size,continous_columns,categorical_columns,onehotencoder,scaler,device):
+def clean(autoencoder,test_df,test_loader,batch_size,continous_columns,categorical_columns,onehotencoder,device):
     """
-     @brief Data cleaning
+     @brief Data cleaning using the whole autoencoder
      @param autoencoder: Autoencoder object
-     @param test_df: Test dataframe
+     @param test_df: Test set dataframe
      @param test_loader: Dataloader object containing test dataset
      @param batch_size: Cleaning batch size 
      @param continous_columns: A list of continous column names
      @param categorical_columns: A list of categorical column names
      @param onehotencoder: Onehot encoder object
-     @param scaler: Scaler object
      @param device: can be "cpu" or "cuda"
     """
     autoencoder.eval()
@@ -38,5 +37,26 @@ def clean(autoencoder,test_df,test_loader,batch_size,continous_columns,categoric
     print(f'\nMAE: {avg_loss:.8f}')
 
     clean_data = pd.DataFrame(clean_outputs.detach().cpu().numpy(),columns=test_df.columns,index=test_df.index[:(test_df.shape[0] // batch_size) * batch_size])
-    print(clean_data.round(decimals=5).head())
-    print(test_df.head())
+    return clean_data
+
+def anonymize(encoder,test_df,test_loader,batch_size,device):
+    """
+     @brief Data anonymizing using only the encoder
+     @param encoder: Encoder object
+     @param test_df: Test set dataFrame
+     @param test_loader: Dataloader object containing test dataset
+     @param batch_size: Anonymizing batch size
+     @param device: can be "cpu" or "cuda"
+    """
+    encoder.eval()
+    anonymize_progress = tqdm(test_loader, desc=f'Anonymize progress', position=0, leave=True)
+
+    anonymized_outputs = torch.empty(0).to(device)
+    with torch.no_grad():
+        for inputs,_ in anonymize_progress:
+            inputs = inputs.to(device)
+            outputs = encoder(inputs)
+            anonymized_outputs = torch.cat((anonymized_outputs,outputs),dim=0)
+    
+    anonymized_data = pd.DataFrame(anonymized_outputs.detach().cpu().numpy(),index=test_df.index[:(test_df.shape[0] // batch_size) * batch_size])
+    return anonymized_data
