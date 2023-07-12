@@ -95,7 +95,6 @@ anonymized_data = anonymize(encoder=encoder,
 
 print(cleaned_data.round(decimals=5).head())
 print(anonymized_data.round(decimals=5).head())
-print(test_df.head())
 
 end_time = time.time()
 execution_time = end_time - start_time
