@@ -15,11 +15,9 @@ class Autoencoder(nn.Module):
 
         # Encoder layers
         encoder_layers = []
-        # Add linear and reLU layers to the encoder.
         for i in range(self.num_layers - 1):
             encoder_layers.append(nn.Linear(layers[i], layers[i + 1]))
             encoder_layers.append(nn.ReLU())
-            # Add dropout to encoder layer.
             for drop_layer, drop_chance in dropout:
                 if i == drop_layer:
                     encoder_layers.append(nn.Dropout(drop_chance))
@@ -38,14 +36,16 @@ class Autoencoder(nn.Module):
         x = self.decoder(x)
         return x
     
-def build_autoencoder(layers,dropout):
+def build_autoencoder(layers,dropout,learning_rate=1e-3,weight_decay=1e-5):
     """
      @brief Build autoencoder encoder decoder and optimizer.
      @param layers: A list specifying the number of layers and their respective size
      @param dropout: A list of tupple specifying dropout layers position and their respective dropout chance
+     @param learning_rate:
+     @param weight_decay:  
     """
     autoencoder = Autoencoder(layers,dropout)
     encoder = autoencoder.encoder
     decoder = autoencoder.decoder
-    optimizer = torch.optim.AdamW(autoencoder.parameters(), lr=1e-3, weight_decay=1e-5)
+    optimizer = torch.optim.AdamW(autoencoder.parameters(), lr=learning_rate, weight_decay=weight_decay)
     return autoencoder, encoder, decoder, optimizer

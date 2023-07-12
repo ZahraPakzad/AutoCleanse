@@ -8,12 +8,12 @@ from sklearn.preprocessing import OneHotEncoder
 from model.autoencoder import build_autoencoder
 from torch.optim.lr_scheduler import StepLR
 from torchsummary import summary
-from torch.nn.parallel import DataParallel
 from tqdm import tqdm
 from model.loss_model import loss_CEMSE
 from data.preprocessor import dataPreprocessor
 from train import train
-from test import clean, anonymize
+from clean import clean
+from anonymize import anonymize
 import time
 
 start_time = time.time()
@@ -60,8 +60,6 @@ layers = [X_train.shape[1],1000,500,35]
 autoencoder, encoder, decoder, optimizer = build_autoencoder(layers,dropout=[(0,0.1)])
 scheduler = StepLR(optimizer, step_size=30, gamma=0.1)   # LR*0.1 every 30 epochs
 
-# device_ids = [0,1]  # Use cuda:0 and cuda:1
-# autoencoder = DataParallel(autoencoder, device_ids=device_ids)
 autoencoder.to(device)
 summary(autoencoder, (X_train.shape))
 
@@ -80,14 +78,14 @@ train(autoencoder=autoencoder,
       scheduler=scheduler,
       device=device)
 
-# cleaned_data = clean(autoencoder=autoencoder,
-#                      test_loader=test_loader,
-#                      test_df=X_test,
-#                      batch_size=batch_size,
-#                      continous_columns=continous_columns, 
-#                      categorical_columns=categorical_columns, 
-#                      onehotencoder=onehotencoder, 
-#                      device=device)
+cleaned_data = clean(autoencoder=autoencoder,
+                     test_loader=test_loader,
+                     test_df=X_test,
+                     batch_size=batch_size,
+                     continous_columns=continous_columns, 
+                     categorical_columns=categorical_columns, 
+                     onehotencoder=onehotencoder, 
+                     device=device)
 
 anonymized_data = anonymize(encoder=encoder,
                             test_df=X_test,
@@ -95,9 +93,9 @@ anonymized_data = anonymize(encoder=encoder,
                             batch_size=batch_size,
                             device=device)                     
 
-# print(cleaned_data.round(decimals=5).head())
+print(cleaned_data.round(decimals=5).head())
 print(anonymized_data.round(decimals=5).head())
-# print(test_df.head())
+print(test_df.head())
 
 end_time = time.time()
 execution_time = end_time - start_time
