@@ -1,5 +1,6 @@
 import setuptools
 
+required = []
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -16,7 +17,6 @@ setuptools.setup(
     license="MIT",
     include_package_data=True,
     install_requires=required,
-    extras_require=extras,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
