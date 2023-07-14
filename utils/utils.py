@@ -6,7 +6,6 @@ from sklearn.model_selection import cross_validate
 from sklearn.inspection import permutation_importance
 from numpy import mean, max, prod, array, hstack
 from numpy.random import choice
-from matplotlib.pyplot import barh, yticks, ylabel, xlabel, title, show, scatter, cm, figure, imshow
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
