@@ -9,7 +9,6 @@ from numpy.random import choice
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
-from IPython.display import display
 
 def softmax(input, encoder, continous_columns, categorical_columns, device):
     """
