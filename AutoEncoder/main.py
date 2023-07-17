@@ -1,16 +1,16 @@
 import torch 
 import pandas as pd
 import torch.nn as nn
-from utils.utils import argmax, softmax
-from data.dataloader import MyDataset, DataLoader
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import OneHotEncoder
 from torch.optim.lr_scheduler import StepLR
 from torchsummary import summary
 from tqdm import tqdm
-from AutoEncoder.model.autoencoder import build_autoencoder
-from AutoEncoder.model.loss_model import loss_CEMSE
-from AutoEncoder.data.preprocessor import dataPreprocessor
+from AutoEncoder.utils import argmax, softmax
+from AutoEncoder.dataloader import MyDataset, DataLoader
+from AutoEncoder.autoencoder import build_autoencoder
+from AutoEncoder.loss_model import loss_CEMSE
+from AutoEncoder.preprocessor import dataPreprocessor
 from AutoEncoder.train import train
 from AutoEncoder.clean import clean
 from AutoEncoder.anonymize import anonymize
