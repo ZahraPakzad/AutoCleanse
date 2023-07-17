@@ -10,10 +10,10 @@ from torch.optim.lr_scheduler import StepLR
 from torchsummary import summary
 from tqdm import tqdm
 from model.loss_model import loss_CEMSE
-from data.preprocessor import dataPreprocessor
-from train import train
-from clean import clean
-from anonymize import anonymize
+from .data.preprocessor import dataPreprocessor
+from .train import train
+from .clean import clean
+from .anonymize import anonymize
 import time
 
 start_time = time.time()
