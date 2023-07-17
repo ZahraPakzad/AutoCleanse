@@ -1,6 +1,6 @@
 import torch
 from tqdm import tqdm
-from model.loss_model import loss_CEMSE
+from AutoEncoder.model.loss_model import loss_CEMSE
 
 def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loader,continous_columns,categorical_columns,onehotencoder,scaler,optimizer,scheduler,device):
     """

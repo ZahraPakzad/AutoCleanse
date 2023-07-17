@@ -5,15 +5,15 @@ from utils.utils import argmax, softmax
 from data.dataloader import MyDataset, DataLoader
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import OneHotEncoder
-from model.autoencoder import build_autoencoder
 from torch.optim.lr_scheduler import StepLR
 from torchsummary import summary
 from tqdm import tqdm
-from model.loss_model import loss_CEMSE
-from .data.preprocessor import dataPreprocessor
-from .train import train
-from .clean import clean
-from .anonymize import anonymize
+from AutoEncoder.model.autoencoder import build_autoencoder
+from AutoEncoder.model.loss_model import loss_CEMSE
+from AutoEncoder.data.preprocessor import dataPreprocessor
+from AutoEncoder.train import train
+from AutoEncoder.clean import clean
+from AutoEncoder.anonymize import anonymize
 import time
 
 start_time = time.time()
