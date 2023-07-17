@@ -1,6 +1,6 @@
 import torch
 from tqdm import tqdm
-from AutoEncoder.model.loss_model import loss_CEMSE
+from AutoEncoder.loss_model import loss_CEMSE
 
 def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loader,continous_columns,categorical_columns,onehotencoder,scaler,optimizer,scheduler,device):
     """
@@ -91,4 +91,4 @@ def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loa
 
     autoencoder.load_state_dict(best_state_dict)
     layers_str = ','.join(str(item) for item in layers)
-    torch.save(autoencoder.state_dict(), f'./checkpoints/autoencoder_{layers_str}.pth')
+    torch.save(autoencoder.state_dict(), f'./AutoEncoder/checkpoints/autoencoder_{layers_str}.pth')
