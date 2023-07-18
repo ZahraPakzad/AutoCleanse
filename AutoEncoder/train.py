@@ -1,8 +1,9 @@
+import os
 import torch
 from tqdm import tqdm
 from AutoEncoder.loss_model import loss_CEMSE
 
-def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loader,continous_columns,categorical_columns,onehotencoder,scaler,optimizer,scheduler,device):
+def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loader,continous_columns,categorical_columns,onehotencoder,scaler,optimizer,scheduler,save,device):
     """
      @brief Autoencoder trainer
      @param autoencoder: Autoencoder object
@@ -18,6 +19,7 @@ def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loa
      @param scaler: Scaler object
      @param optimizer: Optimizer object
      @param scheduler: Scheduler object
+     @param save: A string specifying file path that model can save weight to
      @param device: Can be "cpu" or "cuda"
     """
     best_loss = float('inf')
@@ -89,6 +91,10 @@ def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loa
             break
         train_progress.close()
 
-    autoencoder.load_state_dict(best_state_dict)
-    layers_str = ','.join(str(item) for item in layers)
-    torch.save(autoencoder.state_dict(), f'./AutoEncoder/checkpoints/autoencoder_{layers_str}.pth')
+    if(save is not None):
+        autoencoder.load_state_dict(best_state_dict)
+        layers_str = ','.join(str(item) for item in layers)
+        file_name = f'autoencoder_{layers_str}.pth'
+        file_path = os.path.abspath(os.path.join(save, file_name))
+        torch.save(autoencoder.state_dict(), file_path)
+        print(f'Saved weight to {file_path}')

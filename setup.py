@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name="AutoEncoder",
     packages=["AutoEncoder"],
-    version="0.3.0",
+    version="0.4.0",
     author="Tung Tran",
     description="Data cleaning and anonymization using autoencoder",
     long_description=open("README.md", "r", encoding="utf-8").read(),

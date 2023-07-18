@@ -76,6 +76,7 @@ train(autoencoder=autoencoder,
       scaler=scaler,
       optimizer=optimizer,
       scheduler=scheduler,
+      save="./AutoEncoder/",
       device=device)
 
 cleaned_data = clean(autoencoder=autoencoder,
@@ -94,6 +95,10 @@ anonymized_data = anonymize(encoder=encoder,
                             device=device)                     
 
 print(cleaned_data.round(decimals=5).head())
+
+decoded_cat_cols = pd.DataFrame(onehotencoder.inverse_transform(cleaned_data.iloc[:,len(continous_columns):]),index=cleaned_data.index,columns=categorical_columns)
+cleaned_data = pd.concat([cleaned_data[continous_columns],decoded_cat_cols],axis=1)
+print(cleaned_data)
 print(anonymized_data.round(decimals=5).head())
 
 end_time = time.time()
