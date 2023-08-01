@@ -10,7 +10,7 @@ from AutoEncoder.utils import argmax, softmax
 from AutoEncoder.dataloader import MyDataset, DataLoader
 from AutoEncoder.autoencoder import build_autoencoder
 from AutoEncoder.loss_model import loss_CEMSE
-from AutoEncoder.preprocessor import dataPreprocessor
+from AutoEncoder.preprocessor import dataSplitter,dataPreprocessor
 from AutoEncoder.train import train
 from AutoEncoder.clean import clean
 from AutoEncoder.anonymize import anonymize
@@ -22,7 +22,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Loading dataset
 df = pd.read_csv('~/dataset/categorical/adult.csv')
-
+og_columns = df.columns.to_list()
 continous_columns = ['age','fnlwgt','education.num','capital.gain','capital.loss','hours.per.week']
 categorical_columns = ['workclass','education','marital.status','occupation','relationship','race','sex','native.country','income']
 df = df[continous_columns+categorical_columns]
@@ -30,14 +30,33 @@ df = df[continous_columns+categorical_columns]
 scaler = StandardScaler()
 onehotencoder = OneHotEncoder(sparse=False)
 
-X_train,X_val,X_test = dataPreprocessor(input_df=df,
-                                        train_ratio=0.7,
-                                        val_ratio=0.15,
-                                        test_ratio=0.15,
-                                        continous_columns=continous_columns,
-                                        categorical_columns=categorical_columns,
-                                        scaler=scaler,
-                                        onehotencoder=onehotencoder)
+X_train,X_val,X_test = dataSplitter(input_df=df,
+                                    train_ratio=0.7,
+                                    val_ratio=0.15,
+                                    test_ratio=0.15,
+                                    random_seed=42
+                                    )
+
+X_train = dataPreprocessor(input_df=X_train,
+                        is_train=True,             
+                        continous_columns=continous_columns,
+                        categorical_columns=categorical_columns,
+                        scaler=scaler,
+                        onehotencoder=onehotencoder)
+
+X_val = dataPreprocessor(input_df=X_val,    
+                        is_train=False,         
+                        continous_columns=continous_columns,
+                        categorical_columns=categorical_columns,
+                        scaler=scaler,
+                        onehotencoder=onehotencoder)      
+
+X_test = dataPreprocessor(input_df=X_test,   
+                        is_train=False,          
+                        continous_columns=continous_columns,
+                        categorical_columns=categorical_columns,
+                        scaler=scaler,
+                        onehotencoder=onehotencoder)                                         
 
 # Create dataloader
 train_dataset = MyDataset(X_train)
@@ -76,7 +95,7 @@ train(autoencoder=autoencoder,
       scaler=scaler,
       optimizer=optimizer,
       scheduler=scheduler,
-      save="./AutoEncoder/",
+      save=None,
       device=device)
 
 cleaned_data = clean(autoencoder=autoencoder,
@@ -86,20 +105,20 @@ cleaned_data = clean(autoencoder=autoencoder,
                      continous_columns=continous_columns, 
                      categorical_columns=categorical_columns, 
                      onehotencoder=onehotencoder, 
-                     device=device)
-
-anonymized_data = anonymize(encoder=encoder,
-                            test_df=X_test,
-                            test_loader=test_loader,
-                            batch_size=batch_size,
-                            device=device)                     
-
-print(cleaned_data.round(decimals=5).head())
+                     device=device)                    
 
 decoded_cat_cols = pd.DataFrame(onehotencoder.inverse_transform(cleaned_data.iloc[:,len(continous_columns):]),index=cleaned_data.index,columns=categorical_columns)
-cleaned_data = pd.concat([cleaned_data[continous_columns],decoded_cat_cols],axis=1)
-print(cleaned_data)
-print(anonymized_data.round(decimals=5).head())
+decoded_con_cols = pd.DataFrame(scaler.inverse_transform(cleaned_data.iloc[:,:len(continous_columns)]),index=cleaned_data.index,columns=continous_columns).round(0)
+cleaned_data = pd.concat([decoded_con_cols,decoded_cat_cols],axis=1).reindex(columns=og_columns)
+print(cleaned_data.head())
+
+# anonymized_data = anonymize(encoder=encoder,
+#                             test_df=X_test,
+#                             test_loader=test_loader,
+#                             batch_size=batch_size,
+#                             device=device) 
+
+# print(anonymized_data.round(decimals=5).head())
 
 end_time = time.time()
 execution_time = end_time - start_time
