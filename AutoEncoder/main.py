@@ -14,6 +14,7 @@ from AutoEncoder.preprocessor import dataSplitter,dataPreprocessor
 from AutoEncoder.train import train
 from AutoEncoder.clean import clean
 from AutoEncoder.anonymize import anonymize
+from tabulate import tabulate
 import time
 
 start_time = time.time()
@@ -34,8 +35,7 @@ X_train,X_val,X_test = dataSplitter(input_df=df,
                                     train_ratio=0.7,
                                     val_ratio=0.15,
                                     test_ratio=0.15,
-                                    random_seed=42
-                                    )
+                                    random_seed=42)
 
 X_train = dataPreprocessor(input_df=X_train,
                         is_train=True,             
@@ -95,8 +95,8 @@ train(autoencoder=autoencoder,
       scaler=scaler,
       optimizer=optimizer,
       scheduler=scheduler,
-      save=None,
-      device=device)
+      device=device,
+      save=".")
 
 cleaned_data = clean(autoencoder=autoencoder,
                      test_loader=test_loader,
@@ -104,22 +104,24 @@ cleaned_data = clean(autoencoder=autoencoder,
                      batch_size=batch_size,
                      continous_columns=continous_columns, 
                      categorical_columns=categorical_columns, 
+                     og_columns=og_columns,
                      onehotencoder=onehotencoder, 
+                     scaler=scaler,
                      device=device)                    
 
-decoded_cat_cols = pd.DataFrame(onehotencoder.inverse_transform(cleaned_data.iloc[:,len(continous_columns):]),index=cleaned_data.index,columns=categorical_columns)
-decoded_con_cols = pd.DataFrame(scaler.inverse_transform(cleaned_data.iloc[:,:len(continous_columns)]),index=cleaned_data.index,columns=continous_columns).round(0)
-cleaned_data = pd.concat([decoded_con_cols,decoded_cat_cols],axis=1).reindex(columns=og_columns)
-print(cleaned_data.head())
+anonymized_data = anonymize(encoder=encoder,
+                            test_df=X_test,
+                            test_loader=test_loader,
+                            batch_size=batch_size,
+                            device=device) 
 
-# anonymized_data = anonymize(encoder=encoder,
-#                             test_df=X_test,
-#                             test_loader=test_loader,
-#                             batch_size=batch_size,
-#                             device=device) 
-
-# print(anonymized_data.round(decimals=5).head())
-
+print("\n")
+print(tabulate(df.loc[[28217,8054,4223,22723],og_columns],headers=og_columns,tablefmt="simple",maxcolwidths=[None, 4]))
+print("\n")
+print(tabulate(cleaned_data.iloc[1:5],headers=cleaned_data.columns.to_list(),tablefmt="simple",maxcolwidths=[None, 4]))
+print("\n")
+print(tabulate(anonymized_data.round(decimals=4).iloc[1:5,:32],headers=anonymized_data.columns.to_list(),tablefmt="simple",maxcolwidths=[None, 6]))
+print("\n")
 end_time = time.time()
 execution_time = end_time - start_time
 print(f"Execution time: {execution_time} seconds")

@@ -10,17 +10,17 @@ import torch
 import torch.nn.functional as F
 import torch.optim as optim
 
-def softmax(input, encoder, continous_columns, categorical_columns, device):
+def softmax(input, onehotencoder, continous_columns, categorical_columns, device):
     """
      @brief Computes softmax activations of a dataframe correspondingly to continous and categorical columns
      @param input: The input tensor
-     @param encoder: The onehot encoder used to encode the input
+     @param onehotencoder: The onehot encoder used to encode the categorical input
      @param continous_columns: A list of continous column names
      @param categorical_columns: A list of categorical column names
      @param device: can be "cpu" or "cuda"
     """
     # Map categorical columns with onehot subcolumns
-    encoded_columns = encoder.categories_
+    encoded_columns = onehotencoder.categories_
     column_map = {column: encoded_columns[i] for i, column in enumerate(categorical_columns)}
 
     # Get indices of onehot subcolumns groups
@@ -39,17 +39,17 @@ def softmax(input, encoder, continous_columns, categorical_columns, device):
 
     return output
 
-def argmax(input, encoder, continous_columns, categorical_columns, device):
+def argmax(input, onehotencoder, continous_columns, categorical_columns, device):
     """
      @brief Computes argmax activations of a dataframe correspondingly to continous and categorical columns
      @param input: The input tensor
-     @param encoder: The onehot encoder used to encode the input
+     @param encoder: The onehot encoder used to encode the categorical input
      @param continous_columns: A list of continous column names
      @param categorical_columns: A list of categorical column names
      @param device: Can be "cpu" or "cuda"
     """
     # Map categorical columns with onehot subcolumns
-    encoded_columns = encoder.categories_
+    encoded_columns = onehotencoder.categories_
     column_map = {column: encoded_columns[i] for i, column in enumerate(categorical_columns)}
 
     # Get indices of onehot subcolumns groups

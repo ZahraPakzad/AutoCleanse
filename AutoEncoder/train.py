@@ -1,9 +1,11 @@
 import os
+import io
 import torch
+from exasol.bucketfs import Service
 from tqdm import tqdm
 from AutoEncoder.loss_model import loss_CEMSE
 
-def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loader,continous_columns,categorical_columns,onehotencoder,scaler,optimizer,scheduler,save,device):
+def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loader,continous_columns,categorical_columns,onehotencoder,scaler,optimizer,scheduler,device,save=None):
     """
      @brief Autoencoder trainer
      @param autoencoder: Autoencoder object
@@ -19,8 +21,8 @@ def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loa
      @param scaler: Scaler object
      @param optimizer: Optimizer object
      @param scheduler: Scheduler object
-     @param save: A string specifying file path that model can save weight to
      @param device: Can be "cpu" or "cuda"
+     @param save: Enable saving training weight. Can be "BucketFS" or a directory path. Default None.
     """
     best_loss = float('inf')
     best_state_dict = None
@@ -90,11 +92,27 @@ def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loa
             print("Early stopping triggered. Stopping training.")
             break
         train_progress.close()
+     
+    # Save training weight 
+    autoencoder.load_state_dict(best_state_dict)
+    layers_str = '_'.join(str(item) for item in layers)
+    file_name = f'autoencoder_{layers_str}.pth'
+    if (save is None):
+        pass
+    elif (save=="BucketFS"):   
+        buffer = io.BytesIO()
+        torch.save(autoencoder.state_dict(), buffer)
+        buffer.seek(0)
 
-    if(save is not None):
-        autoencoder.load_state_dict(best_state_dict)
-        layers_str = ','.join(str(item) for item in layers)
-        file_name = f'autoencoder_{layers_str}.pth'
+        url = "http://172.18.0.2:6583"
+        cred ={"default":{"username":"w","password":"write"}}
+
+        bucketfs = Service(url,cred)
+        bucket = bucketfs["default"]
+        
+        # with open(file_path, "rb") as f:
+        bucket.upload(f"autoencoder/{file_name}", buffer)
+    else:
         file_path = os.path.abspath(os.path.join(save, file_name))
         torch.save(autoencoder.state_dict(), file_path)
         print(f'Saved weight to {file_path}')
