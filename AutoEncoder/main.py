@@ -76,27 +76,27 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, dro
 
 # Declaring model
 layers = [X_train.shape[1],1000,500,35]
-autoencoder, encoder, decoder, optimizer = build_autoencoder(layers,dropout=[(0,0.1)])
+autoencoder, encoder, decoder, optimizer = build_autoencoder(layers,dropout=[(0,0.1)],weight_path="/home/tung/development/AutoEncoder/autoencoder_110_1000_500_35_gold.pth")
 scheduler = StepLR(optimizer, step_size=30, gamma=0.1)   # LR*0.1 every 30 epochs
 
 autoencoder.to(device)
 summary(autoencoder, (X_train.shape))
 
-train(autoencoder=autoencoder,
-      patience=15,
-      num_epochs=200,
-      batch_size=batch_size,
-      layers=layers,
-      train_loader=train_loader,
-      val_loader=val_loader,
-      continous_columns=continous_columns, 
-      categorical_columns=categorical_columns, 
-      onehotencoder=onehotencoder, 
-      scaler=scaler,
-      optimizer=optimizer,
-      scheduler=scheduler,
-      device=device,
-      save=".")
+# train(autoencoder=autoencoder,
+#       patience=15,
+#       num_epochs=200,
+#       batch_size=batch_size,
+#       layers=layers,
+#       train_loader=train_loader,
+#       val_loader=val_loader,
+#       continous_columns=continous_columns, 
+#       categorical_columns=categorical_columns, 
+#       onehotencoder=onehotencoder, 
+#       scaler=scaler,
+#       optimizer=optimizer,
+#       scheduler=scheduler,
+#       device=device,
+#       save=".")
 
 cleaned_data = clean(autoencoder=autoencoder,
                      test_loader=test_loader,

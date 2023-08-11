@@ -36,7 +36,7 @@ class Autoencoder(nn.Module):
         x = self.decoder(x)
         return x
     
-def build_autoencoder(layers,dropout,learning_rate=1e-3,weight_decay=1e-5):
+def build_autoencoder(layers,dropout,learning_rate=1e-3,weight_decay=1e-5,weight_path=None):
     """
      @brief Build autoencoder encoder decoder and optimizer.
      @param layers: A list specifying the number of layers and their respective size
@@ -45,6 +45,8 @@ def build_autoencoder(layers,dropout,learning_rate=1e-3,weight_decay=1e-5):
      @param weight_decay:  
     """
     autoencoder = Autoencoder(layers,dropout)
+    if (weight_path is not None):
+        autoencoder.load_state_dict(torch.load(weight_path))
     encoder = autoencoder.encoder
     decoder = autoencoder.decoder
     optimizer = torch.optim.AdamW(autoencoder.parameters(), lr=learning_rate, weight_decay=weight_decay)
