@@ -84,7 +84,7 @@ summary(autoencoder, (X_train.shape))
 
 train(autoencoder=autoencoder,
       patience=15,
-      num_epochs=1,
+      num_epochs=200,
       batch_size=batch_size,
       layers=layers,
       train_loader=train_loader,
@@ -116,11 +116,11 @@ anonymized_data = anonymize(encoder=encoder,
                             device=device) 
 
 print("\n")
-print(tabulate(df.loc[[28217,8054,4223,22723],og_columns],headers=og_columns,tablefmt="simple",maxcolwidths=[None, 4]))
+print(tabulate(df.loc[[28296,28217,8054,4223,22723],og_columns],headers=og_columns,tablefmt="simple",maxcolwidths=[None, 4]))
 print("\n")
-print(tabulate(cleaned_data.iloc[1:5],headers=cleaned_data.columns.to_list(),tablefmt="simple",maxcolwidths=[None, 4]))
+print(tabulate(cleaned_data.head(),headers=cleaned_data.columns.to_list(),tablefmt="simple",maxcolwidths=[None, 4]))
 print("\n")
-print(tabulate(anonymized_data.round(decimals=4).iloc[1:5,:32],headers=anonymized_data.columns.to_list(),tablefmt="simple",maxcolwidths=[None, 6]))
+print(tabulate(anonymized_data.round(decimals=4).iloc[:5,:32],headers=anonymized_data.columns.to_list(),tablefmt="simple",maxcolwidths=[None, 6]))
 print("\n")
 end_time = time.time()
 execution_time = end_time - start_time

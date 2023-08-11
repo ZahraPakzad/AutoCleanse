@@ -97,22 +97,22 @@ def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loa
     autoencoder.load_state_dict(best_state_dict)
     layers_str = '_'.join(str(item) for item in layers)
     file_name = f'autoencoder_{layers_str}.pth'
-    if (save is None):
-        pass
-    elif (save=="BucketFS"):   
-        buffer = io.BytesIO()
-        torch.save(autoencoder.state_dict(), buffer)
-        buffer.seek(0)
+    if (save is not None): 
+        if (save=="BucketFS"):   
+            buffer = io.BytesIO()
+            torch.save(autoencoder.state_dict(), buffer)
+            buffer.seek(0)
 
-        url = "http://172.18.0.2:6583"
-        cred ={"default":{"username":"w","password":"write"}}
+            url = "http://172.18.0.2:6583"
+            cred ={"default":{"username":"w","password":"write"}}
 
-        bucketfs = Service(url,cred)
-        bucket = bucketfs["default"]
-        
-        # with open(file_path, "rb") as f:
-        bucket.upload(f"autoencoder/{file_name}", buffer)
+            bucketfs = Service(url,cred)
+            bucket = bucketfs["default"]
+            
+            bucket.upload(f"autoencoder/{file_name}", buffer)
+        else:
+            file_path = os.path.abspath(os.path.join(save, file_name))
+            torch.save(autoencoder.state_dict(), file_path)
+            print(f'Saved weight to {file_path}')
     else:
-        file_path = os.path.abspath(os.path.join(save, file_name))
-        torch.save(autoencoder.state_dict(), file_path)
-        print(f'Saved weight to {file_path}')
+        pass
