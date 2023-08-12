@@ -105,10 +105,8 @@ def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loa
 
             url = "http://172.18.0.2:6583"
             cred ={"default":{"username":"w","password":"write"}}
-
             bucketfs = Service(url,cred)
-            bucket = bucketfs["default"]
-            
+            bucket = bucketfs["default"]          
             bucket.upload(f"autoencoder/{file_name}", buffer)
         else:
             file_path = os.path.abspath(os.path.join(save, file_name))

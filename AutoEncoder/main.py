@@ -42,21 +42,27 @@ X_train = dataPreprocessor(input_df=X_train,
                         continous_columns=continous_columns,
                         categorical_columns=categorical_columns,
                         scaler=scaler,
-                        onehotencoder=onehotencoder)
+                        onehotencoder=onehotencoder,
+                        save="BucketFS",
+                        file_name="test")
 
 X_val = dataPreprocessor(input_df=X_val,    
                         is_train=False,         
                         continous_columns=continous_columns,
                         categorical_columns=categorical_columns,
                         scaler=scaler,
-                        onehotencoder=onehotencoder)      
+                        onehotencoder=onehotencoder,
+                        save="BucketFS",
+                        file_name="test")      
 
 X_test = dataPreprocessor(input_df=X_test,   
                         is_train=False,          
                         continous_columns=continous_columns,
                         categorical_columns=categorical_columns,
                         scaler=scaler,
-                        onehotencoder=onehotencoder)                                         
+                        onehotencoder=onehotencoder,
+                        save="BucketFS",
+                        file_name="test")                                         
 
 # Create dataloader
 train_dataset = MyDataset(X_train)
@@ -76,6 +82,7 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, dro
 
 # Declaring model
 layers = [X_train.shape[1],1000,500,35]
+
 autoencoder, encoder, decoder, optimizer = build_autoencoder(layers,dropout=[(0,0.1)],weight_path="/home/tung/development/AutoEncoder/autoencoder_110_1000_500_35_gold.pth")
 scheduler = StepLR(optimizer, step_size=30, gamma=0.1)   # LR*0.1 every 30 epochs
 

@@ -1,4 +1,7 @@
 import pandas as pd
+import joblib
+import io
+from exasol.bucketfs import Service
 from sklearn.model_selection import train_test_split
 
 def dataSplitter(input_df,train_ratio,val_ratio,test_ratio,random_seed):
@@ -22,7 +25,7 @@ def dataSplitter(input_df,train_ratio,val_ratio,test_ratio,random_seed):
     return X_train,X_val,X_test
 
 
-def dataPreprocessor(input_df,is_train,continous_columns,categorical_columns,scaler,onehotencoder):
+def dataPreprocessor(input_df,is_train,continous_columns,categorical_columns,scaler,onehotencoder,save=None,file_name=None):
     """
      @brief apply scaling and encoding to the input dataframe
      @param input_df: Input dataframe    
@@ -31,18 +34,64 @@ def dataPreprocessor(input_df,is_train,continous_columns,categorical_columns,sca
      @param categorical_columns: A list of categorical column names
      @param scaler: Scaler object
      @param onehotencoder: Onehot encoder object
+     @param save: Enable saving fit-transformed scaler and encoder. Can be "BucketFS" or a local path
+     @param file_name: Name of the scaler/encoder (without file extension)
     """
     # Preprocess continous columns
     if (is_train == True):
       input_df_scaled = scaler.fit_transform(input_df[continous_columns])
+      if (save is not None):  
+        if (save=="BucketFS"):
+          buffer = io.BytesIO()
+          joblib.dump(scaler,buffer)
+          buffer.seek(0)
+
+          url = "http://172.18.0.2:6583"
+          cred ={"default":{"username":"w","password":"write"}}
+          bucketfs = Service(url,cred)
+          bucket = bucketfs["default"]          
+          bucket.upload(f"autoencoder/scaler_{file_name}.pkl", buffer)
+        else:
+          joblib.dump(scaler,f'{save}/scaler_{file_name}.pkl')
+      else:
+        pass
     else:
+      if (save is not None):
+        if (save=="BucketFS"):
+          scaler = joblib.load(f'/buckets/bfsdefault/default/scaler_{file_name}.pkl')
+        else:
+          scaler = joblib.load(f'{save}/scaler_{file_name}.pkl')
+      else: 
+        pass
       input_df_scaled = scaler.transform(input_df[continous_columns])
     input_df[continous_columns] = input_df_scaled
 
     # Preprocess categorical columns
     if (is_train == True):
       input_df_encoded = onehotencoder.fit_transform(input_df[categorical_columns])
+      if (save is not None):  
+        if (save=="BucketFS"):
+          buffer = io.BytesIO()
+          joblib.dump(onehotencoder,buffer)
+          buffer.seek(0)
+
+          url = "http://172.18.0.2:6583"
+          cred ={"default":{"username":"w","password":"write"}}
+          bucketfs = Service(url,cred)
+          bucket = bucketfs["default"]          
+          bucket.upload(f"autoencoder/onehotencoder_{file_name}.pkl", buffer)
+        else:
+          joblib.dump(scaler,f'{save}/onehotencoder_{file_name}.pkl')
+      else:
+        pass
     else:
+      if (save is not None):
+        if (save=="BucketFS"):
+          scaler = joblib.load(f'/buckets/bfsdefault/default/onehotencoder_{file_name}.pkl')
+        else:
+          scaler = joblib.load(f'{save}/onehotencoder_{file_name}.pkl')
+      else:
+        pass
       input_df_encoded = onehotencoder.transform(input_df[categorical_columns])
     input_df_encoded_part = pd.DataFrame(input_df_encoded, columns=onehotencoder.get_feature_names_out(categorical_columns),index=input_df.index)
     input_df = pd.concat([input_df,input_df_encoded_part],axis=1)
