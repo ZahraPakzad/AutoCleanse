@@ -43,6 +43,7 @@ def build_autoencoder(layers,dropout,learning_rate=1e-3,weight_decay=1e-5,weight
      @param dropout: A list of tupple specifying dropout layers position and their respective dropout chance
      @param learning_rate:
      @param weight_decay:  
+     @param weight_path: Path of pretrained weight 
     """
     autoencoder = Autoencoder(layers,dropout)
     if (weight_path is not None):

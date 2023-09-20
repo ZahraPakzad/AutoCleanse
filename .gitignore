@@ -3,3 +3,5 @@ AutoEncoder/test_bucketfs.py
 autoencoder_110_1000_500_35_gold.pth
 onehotencoder_test.pkl
 scaler_test.pkl
+AutoEncoder/allinone.py
+AutoEncoder/main_.py

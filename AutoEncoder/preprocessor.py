@@ -1,8 +1,14 @@
 import pandas as pd
 import joblib
 import io
-from exasol.bucketfs import Service
 from sklearn.model_selection import train_test_split
+from exasol.bucketfs import Service
+from exasol.bucketfs import (
+    Service,
+    as_bytes,
+    as_file,
+    as_string,
+)
 
 def dataSplitter(input_df,train_ratio,val_ratio,test_ratio,random_seed):
     """
@@ -35,31 +41,37 @@ def dataPreprocessor(input_df,is_train,continous_columns,categorical_columns,sca
      @param scaler: Scaler object
      @param onehotencoder: Onehot encoder object
      @param save: Enable saving fit-transformed scaler and encoder. Can be "BucketFS" or a local path
+     @param load: Enable loading fit-transformed scaler and encoder. Can be "BucketFS" or a local path
      @param file_name: Name of the scaler/encoder (without file extension)
     """
+    url = "http://172.18.0.2:6583"
+    cred ={"default":{"username":"w","password":"write"}}
+    bucketfs = Service(url,cred)
+    bucket = bucketfs["default"]  
+
     # Preprocess continous columns
     if (is_train == True):
       input_df_scaled = scaler.fit_transform(input_df[continous_columns])
-      if (save is not None):  
+      if (save is not None):          
         if (save=="BucketFS"):
+          # Save to BucketFS 
           buffer = io.BytesIO()
           joblib.dump(scaler,buffer)
-          buffer.seek(0)
-
-          url = "http://172.18.0.2:6583"
-          cred ={"default":{"username":"w","password":"write"}}
-          bucketfs = Service(url,cred)
-          bucket = bucketfs["default"]          
-          bucket.upload(f"autoencoder/scaler_{file_name}.pkl", buffer)
-        else:
+          buffer.seek(0)             
+          bucket.upload(f"autoencoder/scaler_{file_name}.pkl", buffer)        
+        else: 
+          # Save locally
           joblib.dump(scaler,f'{save}/scaler_{file_name}.pkl')
       else:
         pass
     else:
       if (save is not None):
         if (save=="BucketFS"):
-          scaler = joblib.load(f'/buckets/bfsdefault/default/scaler_{file_name}.pkl')
+          # Load from BucketFS
+          data = as_file(bucket.download(f'autoencoder/scaler_{file_name}.pkl'), filename=f'scaler_{file_name}.pkl')
+          scaler = joblib.load(data)
         else:
+          # Load locally
           scaler = joblib.load(f'{save}/scaler_{file_name}.pkl')
       else: 
         pass
@@ -71,24 +83,24 @@ def dataPreprocessor(input_df,is_train,continous_columns,categorical_columns,sca
       input_df_encoded = onehotencoder.fit_transform(input_df[categorical_columns])
       if (save is not None):  
         if (save=="BucketFS"):
+          # Save to BucketFS
           buffer = io.BytesIO()
           joblib.dump(onehotencoder,buffer)
-          buffer.seek(0)
-
-          url = "http://172.18.0.2:6583"
-          cred ={"default":{"username":"w","password":"write"}}
-          bucketfs = Service(url,cred)
-          bucket = bucketfs["default"]          
+          buffer.seek(0)        
           bucket.upload(f"autoencoder/onehotencoder_{file_name}.pkl", buffer)
         else:
+          # Save locally
           joblib.dump(scaler,f'{save}/onehotencoder_{file_name}.pkl')
       else:
         pass
     else:
       if (save is not None):
         if (save=="BucketFS"):
-          scaler = joblib.load(f'/buckets/bfsdefault/default/onehotencoder_{file_name}.pkl')
+          # Load from BucketFS
+          data = as_file(bucket.download(f'autoencoder/onehotencoder_{file_name}.pkl'), filename=f'onehotencoder_{file_name}.pkl')
+          scaler = joblib.load(data)
         else:
+          # Load locally
           scaler = joblib.load(f'{save}/onehotencoder_{file_name}.pkl')
       else:
         pass
