@@ -1,5 +1,7 @@
+import io
 import torch
 import torch.nn as nn
+from bucketfs_client import BucketFS_client
 
 class Autoencoder(nn.Module):
     
@@ -36,18 +38,34 @@ class Autoencoder(nn.Module):
         x = self.decoder(x)
         return x
     
-def build_autoencoder(layers,dropout,learning_rate=1e-3,weight_decay=1e-5,weight_path=None):
+def build_autoencoder(layers,dropout,learning_rate=1e-3,weight_decay=1e-5,load_method=None,weight_path=None):
     """
      @brief Build autoencoder encoder decoder and optimizer.
      @param layers: A list specifying the number of layers and their respective size
      @param dropout: A list of tupple specifying dropout layers position and their respective dropout chance
      @param learning_rate:
      @param weight_decay:  
-     @param weight_path: Path of pretrained weight 
+     @param load_method: Weight loading method. Can be "BucketFS" or "local". Disabled by default
+     @param weight_path: Path of pretrained weight file
     """
     autoencoder = Autoencoder(layers,dropout)
+    if (load_method is not None):
+        assert weight_path is not None, "weight_path must be declared if load_method is specified."
     if (weight_path is not None):
-        autoencoder.load_state_dict(torch.load(weight_path))
+        assert load_method is not None, "load_method must be declared if weight path is specified."
+
+    if (load_method=="BucketFS"):
+        # Load weight from BuckeFS
+        client = BucketFS_client()
+        weight = client.download(weight_path)
+    elif(load_method=="local"):
+        # Load weight by local file
+        with open(weight_path, 'rb') as file:
+            weight = io.BytesIO(file.read())
+
+    if (load_method is not None):
+        autoencoder.load_state_dict(torch.load(weight))
+
     encoder = autoencoder.encoder
     decoder = autoencoder.decoder
     optimizer = torch.optim.AdamW(autoencoder.parameters(), lr=learning_rate, weight_decay=weight_decay)

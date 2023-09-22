@@ -4,6 +4,7 @@ import torch
 from exasol.bucketfs import Service
 from tqdm import tqdm
 from AutoEncoder.loss_model import loss_CEMSE
+from bucketfs_client import BucketFS_client
 
 def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loader,continous_columns,categorical_columns,onehotencoder,scaler,optimizer,scheduler,device,save=None):
     """
@@ -101,13 +102,8 @@ def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loa
         if (save=="BucketFS"):   
             buffer = io.BytesIO()
             torch.save(autoencoder.state_dict(), buffer)
-            buffer.seek(0)
-
-            url = "http://172.18.0.2:6583"
-            cred ={"default":{"username":"w","password":"write"}}
-            bucketfs = Service(url,cred)
-            bucket = bucketfs["default"]          
-            bucket.upload(f"autoencoder/{file_name}", buffer)
+            client = BucketFS_client()
+            client.upload(f'autoencoder/{file_name}', buffer)
         else:
             file_path = os.path.abspath(os.path.join(save, file_name))
             torch.save(autoencoder.state_dict(), file_path)

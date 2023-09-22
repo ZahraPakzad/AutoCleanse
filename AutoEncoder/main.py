@@ -1,21 +1,23 @@
 import torch 
 import pandas as pd
 import torch.nn as nn
+import time
+import io
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import OneHotEncoder
 from torch.optim.lr_scheduler import StepLR
 from torchsummary import summary
 from tqdm import tqdm
-from AutoEncoder.utils import argmax, softmax
-from AutoEncoder.dataloader import MyDataset, DataLoader
-from AutoEncoder.autoencoder import build_autoencoder
-from AutoEncoder.loss_model import loss_CEMSE
-from AutoEncoder.preprocessor import dataSplitter,dataPreprocessor
-from AutoEncoder.train import train
-from AutoEncoder.clean import clean
-from AutoEncoder.anonymize import anonymize
 from tabulate import tabulate
-import time
+
+from utils import argmax, softmax
+from dataloader import MyDataset, DataLoader
+from autoencoder import build_autoencoder
+from loss_model import loss_CEMSE
+from preprocessor import dataSplitter,dataPreprocessor
+from train import train
+from clean import clean
+from anonymize import anonymize
 
 start_time = time.time()
 
@@ -43,8 +45,8 @@ X_train = dataPreprocessor(input_df=X_train,
                         categorical_columns=categorical_columns,
                         scaler=scaler,
                         onehotencoder=onehotencoder,
-                        save="BucketFS",
-                        file_name="test")
+                        save="local",
+                        file_path="test")
 
 X_val = dataPreprocessor(input_df=X_val,    
                         is_train=False,         
@@ -52,8 +54,8 @@ X_val = dataPreprocessor(input_df=X_val,
                         categorical_columns=categorical_columns,
                         scaler=scaler,
                         onehotencoder=onehotencoder,
-                        save="BucketFS",
-                        file_name="test")      
+                        save="local",
+                        file_path="test")      
 
 X_test = dataPreprocessor(input_df=X_test,   
                         is_train=False,          
@@ -61,8 +63,8 @@ X_test = dataPreprocessor(input_df=X_test,
                         categorical_columns=categorical_columns,
                         scaler=scaler,
                         onehotencoder=onehotencoder,
-                        save="BucketFS",
-                        file_name="test")                                         
+                        save="local",
+                        file_path="test")                                         
 
 # Create dataloader
 train_dataset = MyDataset(X_train)
@@ -83,7 +85,12 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, dro
 # Declaring model
 layers = [X_train.shape[1],1000,500,35]
 
-autoencoder, encoder, decoder, optimizer = build_autoencoder(layers,dropout=[(0,0.1)],weight_path="/home/tung/development/AutoEncoder/autoencoder_110_1000_500_35_gold.pth")
+# weight_path="/home/tung/development/AutoEncoder/autoencoder_110_1000_500_35_gold.pth"
+# autoencoder, encoder, decoder, optimizer = build_autoencoder(layers,dropout=[(0,0.1)],load_method="local",weight_path=weight_path)
+
+weight_path="/autoencoder/autoencoder_110_1000_500_35.pth"
+autoencoder, encoder, decoder, optimizer = build_autoencoder(layers,dropout=[(0,0.1)],load_method="BucketFS",weight_path=weight_path)
+
 scheduler = StepLR(optimizer, step_size=30, gamma=0.1)   # LR*0.1 every 30 epochs
 
 autoencoder.to(device)
@@ -91,7 +98,7 @@ summary(autoencoder, (X_train.shape))
 
 # train(autoencoder=autoencoder,
 #       patience=15,
-#       num_epochs=200,
+#       num_epochs=1,
 #       batch_size=batch_size,
 #       layers=layers,
 #       train_loader=train_loader,
@@ -103,7 +110,7 @@ summary(autoencoder, (X_train.shape))
 #       optimizer=optimizer,
 #       scheduler=scheduler,
 #       device=device,
-#       save=".")
+#       save="BucketFS")
 
 cleaned_data = clean(autoencoder=autoencoder,
                      test_loader=test_loader,
