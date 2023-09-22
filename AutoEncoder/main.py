@@ -10,14 +10,23 @@ from torchsummary import summary
 from tqdm import tqdm
 from tabulate import tabulate
 
-from utils import argmax, softmax
-from dataloader import MyDataset, DataLoader
-from autoencoder import build_autoencoder
-from loss_model import loss_CEMSE
-from preprocessor import dataSplitter,dataPreprocessor
-from train import train
-from clean import clean
-from anonymize import anonymize
+# from utils import argmax, softmax
+# from dataloader import MyDataset, DataLoader
+# from autoencoder import build_autoencoder
+# from loss_model import loss_CEMSE
+# from preprocessor import dataSplitter,dataPreprocessor
+# from train import train
+# from clean import clean
+# from anonymize import anonymize
+
+from AutoEncoder.utils import argmax, softmax
+from AutoEncoder.dataloader import MyDataset, DataLoader
+from AutoEncoder.autoencoder import build_autoencoder
+from AutoEncoder.loss_model import loss_CEMSE
+from AutoEncoder.preprocessor import dataSplitter,dataPreprocessor
+from AutoEncoder.train import train
+from AutoEncoder.clean import clean
+from AutoEncoder.anonymize import anonymize
 
 start_time = time.time()
 
