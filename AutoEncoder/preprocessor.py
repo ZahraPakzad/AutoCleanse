@@ -2,7 +2,8 @@ import pandas as pd
 import joblib
 import io
 from sklearn.model_selection import train_test_split
-from bucketfs_client import BucketFS_client
+from AutoEncoder.bucketfs_client import BucketFS_client
+# from bucketfs_client import BucketFS_client
 
 def dataSplitter(input_df,train_ratio,val_ratio,test_ratio,random_seed):
     """
