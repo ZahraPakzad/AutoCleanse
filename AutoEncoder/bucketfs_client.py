@@ -1,5 +1,4 @@
 import io
-from exasol.bucketfs import Service
 from exasol.bucketfs import (
     Service,
     as_bytes,

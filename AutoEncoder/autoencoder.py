@@ -1,7 +1,6 @@
 import io
 import torch
 import torch.nn as nn
-# from bucketfs_client import BucketFS_client
 from AutoEncoder.bucketfs_client import BucketFS_client
 
 class Autoencoder(nn.Module):
