@@ -67,3 +67,12 @@ def argmax(input, onehotencoder, continous_columns, categorical_columns, device)
         start_index = end_index
 
     return output
+
+def generate_autoencoder_name(layer_sizes):
+    # Convert the list of layer sizes to a list of strings
+    layer_sizes_str = [str(size) for size in layer_sizes]
+    
+    # Join the list of strings with underscores and prepend 'autoencoder_'
+    autoencoder_name = '/autoencoder/autoencoder_' + '_'.join(layer_sizes_str) + '.pth'
+    
+    return autoencoder_name

@@ -2,6 +2,7 @@ import pandas as pd
 import joblib
 import io
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from AutoEncoder.bucketfs_client import BucketFS_client
 
 def dataSplitter(input_df,train_ratio,val_ratio,test_ratio,random_seed):
@@ -25,7 +26,7 @@ def dataSplitter(input_df,train_ratio,val_ratio,test_ratio,random_seed):
     return X_train,X_val,X_test
 
 
-def dataPreprocessor(input_df,is_train,continous_columns,categorical_columns,scaler,onehotencoder,save=None,file_path=None):
+def dataPreprocessor(input_df,is_train,continous_columns,categorical_columns,location=None,prefix=None):
     """
      @brief apply scaling and encoding to the input dataframe
      @param input_df: Input dataframe    
@@ -34,38 +35,46 @@ def dataPreprocessor(input_df,is_train,continous_columns,categorical_columns,sca
      @param categorical_columns: A list of categorical column names
      @param scaler: Scaler object
      @param onehotencoder: Onehot encoder object
-     @param save: Enable saving fit-transformed scaler and encoder. Can be "BucketFS" or "local"
-     @param file_path: Path of the save destination of scaler/encoder
+     @param location: Enable saving/loading fit-transformed scaler and encoder to/from the specified location. Can be "BucketFS" or "local"
+     @param prefix: Name prefix of saved scaler/encoder
     """
-    if (save is not None):
-      assert file_path is not None, "file_path must be declared if save is specified."
-    if (file_path is not None):
-      assert save is not None, "save must be declared if file_path is specified."
+    if (location is not None):
+      assert prefix is not None, "prefix must be declared if location is specified."
+    if (prefix is not None):
+      assert location is not None, "location must be declared if prefix is specified."
 
     client = BucketFS_client()
+    scaler = StandardScaler()
+    onehotencoder = OneHotEncoder(sparse=False)
     # Preprocess continous columns
     if (is_train == True):
       input_df_scaled = scaler.fit_transform(input_df[continous_columns])
-      if (save is not None):          
-        if (save=="BucketFS"):
+      if (location is not None):          
+        if (location=="BucketFS"):
           # Save to BucketFS 
           buffer = io.BytesIO()
           joblib.dump(scaler,buffer)
-          client.upload(f'autoencoder/{file_path}_scaler.pkl', buffer)      
-        elif (save=="local"): 
+          client.upload(f'autoencoder/{prefix}_scaler.pkl', buffer)      
+        elif (location=="local"): 
           # Save locally
-          joblib.dump(scaler,f'{file_path}_scaler.pkl')
+          joblib.dump(scaler,f'{prefix}_scaler.pkl')
       else:
         pass
     else:
-      if (save is not None):
-        if (save=="BucketFS"):
+      if (location is not None):
+        if (location=="BucketFS"):
           # Load from BucketFS
-          data = client.download(f'autoencoder/{file_path}_scaler.pkl')
-          scaler = joblib.load(data)
-        elif (save=="local"):
+          data = client.download(f'autoencoder/{prefix}_scaler.pkl')
+          try:
+            scaler = joblib.load(data)
+          except Exception as e:
+            print("Fail to load scaler from BucketFS", e)
+        elif (location=="local"):
           # Load locally
-          scaler = joblib.load(f'{file_path}_scaler.pkl')
+          try:
+            scaler = joblib.load(f'{prefix}_scaler.pkl')
+          except Exception as e:
+            print("Fail to load encoder from local disk", e)
       else: 
         pass
       input_df_scaled = scaler.transform(input_df[continous_columns])
@@ -74,26 +83,32 @@ def dataPreprocessor(input_df,is_train,continous_columns,categorical_columns,sca
     # Preprocess categorical columns
     if (is_train == True):
       input_df_encoded = onehotencoder.fit_transform(input_df[categorical_columns])
-      if (save is not None):  
-        if (save=="BucketFS"):
+      if (location is not None):  
+        if (location=="BucketFS"):
           # Save to BucketFS
           buffer = io.BytesIO()
           joblib.dump(onehotencoder,buffer)
-          client.upload(f'autoencoder/{file_path}_encoder.pkl', buffer)     
-        elif (save=="local"):
+          client.upload(f'autoencoder/{prefix}_encoder.pkl', buffer)     
+        elif (location=="local"):
           # Save locally
-          joblib.dump(onehotencoder,f'{file_path}_encoder.pkl')
+          joblib.dump(onehotencoder,f'{prefix}_encoder.pkl')
       else:
         pass
     else:
-      if (save is not None):
-        if (save=="BucketFS"):
+      if (location is not None):
+        if (location=="BucketFS"):
           # Load from BucketFS
-          data = client.download(f'autoencoder/{file_path}_encoder.pkl')
-          onehotencoder = joblib.load(data)
-        elif (save=="local"):
+          data = client.download(f'autoencoder/{prefix}_encoder.pkl')
+          try: 
+            onehotencoder = joblib.load(data)
+          except Exception as e:
+            print("Fail to load encoder from BucketFS", e)
+        elif (location=="local"):
           # Load locally
-          onehotencoder = joblib.load(f'{file_path}_encoder.pkl')
+          try:
+            onehotencoder = joblib.load(f'{prefix}_encoder.pkl')
+          except Exception as e:
+            print("Fail to load encoder from local disk", e) 
       else:
         pass
       input_df_encoded = onehotencoder.transform(input_df[categorical_columns])
@@ -101,4 +116,4 @@ def dataPreprocessor(input_df,is_train,continous_columns,categorical_columns,sca
     input_df = pd.concat([input_df,input_df_encoded_part],axis=1)
     input_df.drop(columns=categorical_columns, inplace=True)
 
-    return input_df
+    return input_df,scaler,onehotencoder
