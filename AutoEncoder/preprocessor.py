@@ -82,7 +82,7 @@ def dataPreprocessor(input_df,is_train,continous_columns,categorical_columns,sca
           client.upload(f'autoencoder/{file_path}_encoder.pkl', buffer)     
         elif (save=="local"):
           # Save locally
-          joblib.dump(scaler,f'{file_path}_encoder.pkl')
+          joblib.dump(onehotencoder,f'{file_path}_encoder.pkl')
       else:
         pass
     else:
@@ -90,10 +90,10 @@ def dataPreprocessor(input_df,is_train,continous_columns,categorical_columns,sca
         if (save=="BucketFS"):
           # Load from BucketFS
           data = client.download(f'autoencoder/{file_path}_encoder.pkl')
-          scaler = joblib.load(data)
+          onehotencoder = joblib.load(data)
         elif (save=="local"):
           # Load locally
-          scaler = joblib.load(f'{file_path}_encoder.pkl')
+          onehotencoder = joblib.load(f'{file_path}_encoder.pkl')
       else:
         pass
       input_df_encoded = onehotencoder.transform(input_df[categorical_columns])
