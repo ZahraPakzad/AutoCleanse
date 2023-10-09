@@ -104,9 +104,8 @@ def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loa
             torch.save(autoencoder.state_dict(), buffer)
             client = BucketFS_client()
             client.upload(f'autoencoder/{file_name}', buffer)
-        else:
-            file_path = os.path.abspath(os.path.join(save, file_name))
-            torch.save(autoencoder.state_dict(), file_path)
-            print(f'Saved weight to {file_path}')
+        elif (save=="local"):
+            torch.save(autoencoder.state_dict(), file_name)
+            print(f'Saved weight to {file_name}')
     else:
         pass
