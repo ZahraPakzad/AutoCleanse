@@ -35,26 +35,28 @@ X_train,X_val,X_test = dataSplitter(input_df=df,
                                     test_ratio=0.15,
                                     random_seed=42)
 
+layers = [1000,500,35] #@TODO: just a hack to name saved files between runs. Kinda ugly. See model declaration below to know why.
+
 X_train,scaler,onehotencoder = dataPreprocessor(input_df=X_train,
                         is_train=True,             
                         continous_columns=continous_columns,
                         categorical_columns=categorical_columns,
                         location="local",
-                        prefix="test")
+                        layers=layers)
 
 X_val,scaler,onehotencoder = dataPreprocessor(input_df=X_val,    
                         is_train=False,         
                         continous_columns=continous_columns,
                         categorical_columns=categorical_columns,
                         location="local",
-                        prefix="test")                            
+                        layers=layers)                            
 
 X_test,scaler,onehotencoder = dataPreprocessor(input_df=X_test,   
                         is_train=False,
                         continous_columns=continous_columns,
                         categorical_columns=categorical_columns,
                         location="local",
-                        prefix="test")       
+                        layers=layers)       
 
 # Create dataloader
 train_dataset = MyDataset(X_train)
@@ -73,14 +75,13 @@ val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, drop_last=True, collate_fn=custom_collate_fn)
 
 # Declaring model
-layers = [X_test.shape[1],1000,500,35]
-
-autoencoder, encoder, decoder, optimizer = build_autoencoder(layers,dropout=[(0,0.1)],load_method="BucketFS")
+layers = [X_test.shape[1]]+layers                                  
+autoencoder, encoder, decoder, optimizer = build_autoencoder(layers,dropout=[(0,0.1)],load_method="local")
 
 scheduler = StepLR(optimizer, step_size=30, gamma=0.1)   # LR*0.1 every 30 epochs
 
 autoencoder.to(device)
-summary(autoencoder, (X_train.shape))
+summary(autoencoder, (X_test.shape))
 
 train(autoencoder=autoencoder,
       patience=15,

@@ -96,7 +96,7 @@ def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loa
      
     # Save training weight 
     autoencoder.load_state_dict(best_state_dict)
-    layers_str = '_'.join(str(item) for item in layers)
+    layers_str = '_'.join(str(item) for item in layers[1:]) #@TODO: file name hack
     file_name = f'autoencoder_{layers_str}.pth'
     if (save is not None): 
         if (save=="BucketFS"):   

@@ -68,9 +68,9 @@ def argmax(input, onehotencoder, continous_columns, categorical_columns, device)
 
     return output
 
-def generate_autoencoder_name(layer_sizes,load_method):
+def generate_autoencoder_name(layer_sizes,load_method=None):
     # Convert the list of layer sizes to a list of strings
-    layer_sizes_str = [str(size) for size in layer_sizes]
+    layer_sizes_str = [str(size) for size in layer_sizes[1:]]
     
     if (load_method=="BucketFS"):
         autoencoder_name = '/autoencoder/autoencoder_' + '_'.join(layer_sizes_str) + '.pth'

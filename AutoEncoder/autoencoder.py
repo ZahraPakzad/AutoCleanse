@@ -49,18 +49,17 @@ def build_autoencoder(layers,dropout,learning_rate=1e-3,weight_decay=1e-5,load_m
      @param load_method: Weight loading method. Can be "BucketFS" or "local". Disabled by default
     """
     autoencoder = Autoencoder(layers,dropout)
-    weight_path = generate_autoencoder_name(layers,load_method)
-
-    if (load_method=="BucketFS"):
-        # Load weight from BuckeFS
-        client = BucketFS_client()
-        weight = client.download(weight_path)
-    elif(load_method=="local"):
-        # Load weight by local file
-        with open(weight_path, 'rb') as file:
-            weight = io.BytesIO(file.read())
-
+    
     if (load_method is not None):
+        weight_path = generate_autoencoder_name(layers,load_method)
+        if (load_method=="BucketFS"):
+            # Load weight from BuckeFS
+            client = BucketFS_client()
+            weight = client.download(weight_path)
+        elif(load_method=="local"):
+            # Load weight by local file
+            with open(weight_path, 'rb') as file:
+                weight = io.BytesIO(file.read())
         autoencoder.load_state_dict(torch.load(weight))
 
     encoder = autoencoder.encoder

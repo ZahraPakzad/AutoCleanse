@@ -5,3 +5,7 @@ AutoEncoder/allinone.py
 AutoEncoder/main_.py
 test_encoder.pkl
 test_scaler.pkl
+autoencoder_1000_500_35_encoder.pkl
+.gitignore
+autoencoder_1000_500_35_scaler.pkl
+autoencoder_1000_500_35.pth
