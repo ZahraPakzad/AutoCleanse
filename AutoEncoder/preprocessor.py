@@ -3,8 +3,11 @@ import joblib
 import io
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from AutoEncoder.bucketfs_client import BucketFS_client
-from AutoEncoder.utils import generate_autoencoder_name
+# from AutoEncoder.bucketfs_client import BucketFS_client
+# from AutoEncoder.utils import generate_autoencoder_name
+
+from bucketfs_client import BucketFS_client
+from utils import generate_autoencoder_name
 
 def dataSplitter(input_df,train_ratio,val_ratio,test_ratio,random_seed):
     """

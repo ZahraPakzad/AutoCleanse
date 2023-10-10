@@ -3,8 +3,8 @@ import io
 import torch
 from exasol.bucketfs import Service
 from tqdm import tqdm
-from AutoEncoder.loss_model import loss_CEMSE
-from AutoEncoder.bucketfs_client import BucketFS_client
+from loss_model import loss_CEMSE
+from bucketfs_client import BucketFS_client
 
 def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loader,continous_columns,categorical_columns,onehotencoder,scaler,optimizer,scheduler,device,save=None):
     """

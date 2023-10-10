@@ -1,7 +1,9 @@
 import torch
 import pandas as pd
 from tqdm import tqdm
-from AutoEncoder.utils import argmax,softmax
+# from AutoEncoder.utils import argmax,softmax
+
+from utils import argmax,softmax
 
 def clean(autoencoder,test_df,test_loader,batch_size,continous_columns,categorical_columns,og_columns,onehotencoder,scaler,device):
     """
