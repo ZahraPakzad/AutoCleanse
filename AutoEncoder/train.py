@@ -28,6 +28,7 @@ def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loa
     best_loss = float('inf')
     best_state_dict = None
 
+    counter = 0
     # Training loop
     for epoch in range(num_epochs):
         train_progress = tqdm(train_loader, desc=f'Epoch [{epoch+1}/{num_epochs}], training progress', position=0, leave=True)
@@ -95,10 +96,10 @@ def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loa
         train_progress.close()
      
     # Save training weight 
-    autoencoder.load_state_dict(best_state_dict)
-    layers_str = '_'.join(str(item) for item in layers[1:]) #@TODO: file name hack
-    file_name = f'autoencoder_{layers_str}.pth'
     if (save is not None): 
+        autoencoder.load_state_dict(best_state_dict)
+        layers_str = '_'.join(str(item) for item in layers[1:]) #@TODO: file name hack
+        file_name = f'autoencoder_{layers_str}.pth'
         if (save=="BucketFS"):   
             buffer = io.BytesIO()
             torch.save(autoencoder.state_dict(), buffer)

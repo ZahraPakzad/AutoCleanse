@@ -97,7 +97,7 @@ train(autoencoder=autoencoder,
       optimizer=optimizer,
       scheduler=scheduler,
       device=device,
-      save="local")
+      save=None)
 
 cleaned_data = clean(autoencoder=autoencoder,
                      test_loader=test_loader,
