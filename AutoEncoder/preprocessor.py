@@ -45,7 +45,10 @@ def dataPreprocessor(input_df,is_train: bool,continous_columns: list,categorical
     if (location not in {"BucketFS","local"}):
       raise ValueError("location must be either BucketFS or local")
 
-    client = BucketFS_client()
+    client = None
+    if (location == "BucketFS"):
+      client = BucketFS_client()
+
     scaler = StandardScaler()
     onehotencoder = OneHotEncoder(sparse=False)
 
