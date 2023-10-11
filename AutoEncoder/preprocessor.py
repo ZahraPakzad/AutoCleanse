@@ -6,7 +6,7 @@ from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from AutoEncoder.bucketfs_client import BucketFS_client
 from AutoEncoder.utils import generate_autoencoder_name
 
-def dataSplitter(input_df,train_ratio,val_ratio,test_ratio,random_seed):
+def dataSplitter(input_df,train_ratio: float,val_ratio: float,test_ratio: float,random_seed: float):
     """
      @brief Split dataset into training, validation and test set
      @param train_ratio: float or int ratio of training data
@@ -15,8 +15,13 @@ def dataSplitter(input_df,train_ratio,val_ratio,test_ratio,random_seed):
      @param random_seed: for debugging
     """
     # Calculate the sizes of train, validation, and test sets
-    if (train_ratio+val_ratio+test_ratio != 1):
-      raise ValueError(f"Ratio sum is not equal to 1, got{train_ratio+val_ratio+test_ratio} instead.")
+    try: 
+      sum = train_ratio + val_ratio + test_ratio
+      if (sum != 1):
+        raise ValueError(f"Total percentage is not equal to 1, got {sum}")
+    except ValueError as e:
+      print(f"{e}. Using default split ratio 0.7:0.15:0.15 instead.")
+      train_ratio,val_ratio,test_ratio = 0.7,0.15,0.15
     total_size = len(input_df)
     train_size = int(total_size * train_ratio)
     val_size = int(total_size * val_ratio)
@@ -58,10 +63,16 @@ def dataPreprocessor(input_df,is_train: bool,continous_columns: list,categorical
         # Save to BucketFS 
         buffer = io.BytesIO()
         joblib.dump(scaler,buffer)
-        client.upload(f'{prefix}_scaler.pkl', buffer)      
+        try:
+          client.upload(f'{prefix}_scaler.pkl', buffer)      
+        except Exception as e:
+          raise FunctionError(f"Failed uploading {prefix}_scaler.pkl to BucketFS") from e
       elif (location=="local"): 
         # Save locally
-        joblib.dump(scaler,f'{prefix}_scaler.pkl')
+        try:
+          joblib.dump(scaler,f'{prefix}_scaler.pkl')
+        except Exception as e:
+          raise FunctionError(f"Failed saving {prefix}_scaler.pkl to local") from e
     else:
       if (location=="BucketFS"):
         # Load from BucketFS
@@ -69,13 +80,13 @@ def dataPreprocessor(input_df,is_train: bool,continous_columns: list,categorical
         try:
           scaler = joblib.load(data)
         except Exception as e:
-          print("Fail to load scaler from BucketFS", e)
+          raise FunctionError(f"Failed loading {prefix}_scaler.pkl  from BucketFS") from e
       elif (location=="local"):
         # Load locally
         try:
           scaler = joblib.load(f'{prefix}_scaler.pkl')
         except Exception as e:
-          print("Fail to load encoder from local disk", e)
+          raise FunctionError(f"Failed loading {prefix}_scaler.pkl  from BucketFS") from e
       input_df_scaled = scaler.transform(input_df[continous_columns])
     input_df[continous_columns] = input_df_scaled
 
@@ -86,10 +97,16 @@ def dataPreprocessor(input_df,is_train: bool,continous_columns: list,categorical
         # Save to BucketFS
         buffer = io.BytesIO()
         joblib.dump(onehotencoder,buffer)
-        client.upload(f'{prefix}_encoder.pkl', buffer)     
+        try:
+          client.upload(f'{prefix}_encoder.pkl', buffer)     
+        except Exception as e:
+          raise FunctionError(f"Failed uploading {prefix}_encoder.pkl to BucketFS") from e
       elif (location=="local"):
         # Save locally
-        joblib.dump(onehotencoder,f'{prefix}_encoder.pkl')
+        try:
+          joblib.dump(onehotencoder,f'{prefix}_encoder.pkl')
+        except Exception as e:
+          raise FunctionError(f"Failed saving {prefix}_encoder.pkl to local") from e
     else:
       if (location=="BucketFS"):
         # Load from BucketFS
@@ -97,13 +114,13 @@ def dataPreprocessor(input_df,is_train: bool,continous_columns: list,categorical
         try: 
           onehotencoder = joblib.load(data)
         except Exception as e:
-          print("Fail to load encoder from BucketFS", e)
+          raise FunctionError(f"Failed loading {prefix}_encoder.pkl  from BucketFS") from e
       elif (location=="local"):
         # Load locally
         try:
           onehotencoder = joblib.load(f'{prefix}_encoder.pkl')
         except Exception as e:
-          print("Fail to load encoder from local disk", e) 
+          raise FunctionError(f"Failed loading {prefix}_encoder.pkl  from BucketFS") from e
       input_df_encoded = onehotencoder.transform(input_df[categorical_columns])
     input_df_encoded_part = pd.DataFrame(input_df_encoded, columns=onehotencoder.get_feature_names_out(categorical_columns),index=input_df.index)
     input_df = pd.concat([input_df,input_df_encoded_part],axis=1)
