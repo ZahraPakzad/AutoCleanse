@@ -5,11 +5,16 @@ import os
 from AutoEncoder.preprocessor import *
 from AutoEncoder.bucketfs_client import *
 
+data = {'Numerical': [11,22,33,44,55,66,77,88,99,00], 'Categorical': ['A','C','B','A','D','C','B','D','D','C']}
+data_con = {'Numerical': [11,22,33,44,55,66,77,88,99,00]}
+data_cat = {'Categorical': ['A','C','B','A','D','C','B','D','D','C']}
+
 class test_preprocessor(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(test_preprocessor, self).__init__(*args, **kwargs)
-        self.data = {'Numerical': [11,22,33,44,55,66,77,88,99,00], 'Categorical': ['A','C','B','A','D','C','B','D','D','C']}
-        self.df = pd.DataFrame(self.data)
+        self.df = pd.DataFrame(data)
+        self.df_con = pd.DataFrame(data_con)
+        self.df_cat = pd.DataFrame(data_cat)
 
     def test_dataSplitter(self):
         # Test nominal output value
@@ -22,57 +27,170 @@ class test_preprocessor(unittest.TestCase):
         test2_nominal = pd.DataFrame({'Numerical':[99,22],'Categorical':['D','C']})
         assert np.array_equal(test2.values,test2_nominal.values), "Unexpected result."
 
+        print("test_dataSplitter: OK")
+    
     def test_dataPreprocessor_BucketFS(self):
         client = BucketFS_client()
+        location = "BucketFS"
+        layers = ['test']
 
         # Test save 
         df_train,_,_ = dataPreprocessor(input_df=self.df,
                                         is_train=True,             
                                         continous_columns=['Numerical'],
                                         categorical_columns=['Categorical'],
-                                        location="BucketFS",
-                                        layers=['test'])                                         
+                                        location=location,
+                                        layers=layers)                                        
 
-        self.assertTrue(client.check("autoencoder/autoencoder_test_scaler.pkl"))
-        self.assertTrue(client.check("autoencoder/autoencoder_test_encoder.pkl"))
+        self.assertTrue(client.check(f"autoencoder/autoencoder_{layers[0]}_scaler.pkl"))
+        self.assertTrue(client.check(f"autoencoder/autoencoder_{layers[0]}_encoder.pkl"))
 
         # Test load 
         df_test,_,_ = dataPreprocessor( input_df=self.df,
                                         is_train=False,             
                                         continous_columns=['Numerical'],
                                         categorical_columns=['Categorical'],
-                                        location="BucketFS",
-                                        layers=['test']) 
+                                        location=location,
+                                        layers=layers)
 
-        if client.check("autoencoder/autoencoder_test_scaler.pkl"):
-            client.delete("/autoencoder/autoencoder_test_scaler.pkl")
-        if client.check("autoencoder/autoencoder_test_encoder.pkl"):
-            client.delete("/autoencoder/autoencoder_test_encoder.pkl")                                                 
+        if client.check(f"autoencoder/autoencoder_{layers[0]}_scaler.pkl"):
+            client.delete(f"/autoencoder/autoencoder_{layers[0]}_scaler.pkl")
+        if client.check(f"autoencoder/autoencoder_{layers[0]}_encoder.pkl"):
+            client.delete(f"/autoencoder/autoencoder_{layers[0]}_encoder.pkl")      
+
+        print("test_dataPreprocessor_BucketFS: OK")                                           
       
     def test_dataPreprocessor_local(self):
+        location = "local"
+        layers = ['test']
+
         # Test save 
         df_train,_,_ = dataPreprocessor(input_df=self.df,
                                         is_train=True,             
                                         continous_columns=['Numerical'],
                                         categorical_columns=['Categorical'],
-                                        location="local",
-                                        layers=['test'])                                         
+                                        location=location,
+                                        layers=layers)                                        
 
-        self.assertTrue(os.path.exists("autoencoder_test_scaler.pkl"))
-        self.assertTrue(os.path.exists("autoencoder_test_encoder.pkl"))
+        self.assertTrue(os.path.exists(f"autoencoder_{layers[0]}_scaler.pkl"))
+        self.assertTrue(os.path.exists(f"autoencoder_{layers[0]}_encoder.pkl"))
 
         # Test load 
         df_test,_,_ = dataPreprocessor( input_df=self.df,
                                         is_train=False,             
                                         continous_columns=['Numerical'],
                                         categorical_columns=['Categorical'],
-                                        location="local",
-                                        layers=['test']) 
+                                        location=location,
+                                        layers=layers)
 
-        if os.path.exists("autoencoder_test_scaler.pkl"):
-            os.remove("autoencoder_test_scaler.pkl")
-        if os.path.exists("autoencoder_test_encoder.pkl"):
-            os.remove("autoencoder_test_encoder.pkl")             
+        if os.path.exists(f"autoencoder_{layers[0]}_scaler.pkl"):
+            os.remove(f"autoencoder_{layers[0]}_scaler.pkl")
+        if os.path.exists(f"autoencoder_{layers[0]}_encoder.pkl"):
+            os.remove(f"autoencoder_{layers[0]}_encoder.pkl")  
+
+        print("test_dataPreprocessor_local: OK")
+
+    def test_dataPreprocessor_con_BucketFS(self):
+        client = BucketFS_client()
+        location="BucketFS"
+        layers=['test_con']
+
+        # Test save 
+        df_train,_,_ = dataPreprocessor(input_df=self.df,
+                                        is_train=True,             
+                                        continous_columns=['Numerical'],
+                                        location=location,
+                                        layers=layers)                                         
+
+        self.assertTrue(client.check(f"autoencoder/autoencoder_{layers[0]}_scaler.pkl"))
+
+        # Test load 
+        df_test,_,_ = dataPreprocessor( input_df=self.df,
+                                        is_train=False,             
+                                        continous_columns=['Numerical'],
+                                        location=location,
+                                        layers=layers)
+
+        if client.check(f"autoencoder/autoencoder_{layers[0]}_scaler.pkl"):
+            client.delete(f"/autoencoder/autoencoder_{layers[0]}_scaler.pkl")   
+
+        print("test_dataPreprocessor_con_BucketFS: OK")  
+
+    def test_dataPreprocessor_con_local(self):
+        location="local"
+        layers=['test_con']
+
+        # Test save 
+        df_train,_,_ = dataPreprocessor(input_df=self.df,
+                                        is_train=True,             
+                                        continous_columns=['Numerical'],                                        
+                                        location=location,
+                                        layers=layers)                                         
+
+        self.assertTrue(os.path.exists(f"autoencoder_{layers[0]}_scaler.pkl"))
+
+        # Test load 
+        df_test,_,_ = dataPreprocessor( input_df=self.df,
+                                        is_train=False,             
+                                        continous_columns=['Numerical'],
+                                        location=location,
+                                        layers=layers)
+
+        if os.path.exists(f"autoencoder_{layers[0]}_scaler.pkl"):
+            os.remove(f"autoencoder_{layers[0]}_scaler.pkl")
+
+        print("test_dataPreprocessor_con_local: OK")
+
+    def test_dataPreprocessor_cat_BucketFS(self):
+        client = BucketFS_client()
+        location="BucketFS"
+        layers=['test_cat']
+
+        # Test save 
+        df_train,_,_ = dataPreprocessor(input_df=self.df,
+                                        is_train=True,             
+                                        categorical_columns=['Categorical'],
+                                        location=location,
+                                        layers=layers)                                         
+
+        self.assertTrue(client.check(f"autoencoder/autoencoder_{layers[0]}_encoder.pkl"))
+
+        # Test load 
+        df_test,_,_ = dataPreprocessor( input_df=self.df,
+                                        is_train=False,             
+                                        categorical_columns=['Categorical'],
+                                        location=location,
+                                        layers=layers)
+
+        if client.check(f"autoencoder/autoencoder_{layers[0]}_encoder.pkl"):
+            client.delete(f"/autoencoder/autoencoder_{layers[0]}_encoder.pkl")      
+
+        print("test_dataPreprocessor_cat_BucketFS: OK")  
+
+    def test_dataPreprocessor_cat_local(self):
+        location = "local"
+        layers = ['test_cat']
+
+        # Test save 
+        df_train,_,_ = dataPreprocessor(input_df=self.df,
+                                        is_train=True,             
+                                        categorical_columns=['Categorical'],
+                                        location=location,
+                                        layers=layers)                                        
+
+        self.assertTrue(os.path.exists(f"autoencoder_{layers[0]}_encoder.pkl"))
+
+        # Test load 
+        df_test,_,_ = dataPreprocessor( input_df=self.df,
+                                        is_train=False,             
+                                        categorical_columns=['Categorical'],
+                                        location=location,
+                                        layers=layers)
+
+        if os.path.exists(f"autoencoder_{layers[0]}_encoder.pkl"):
+            os.remove(f"autoencoder_{layers[0]}_encoder.pkl")  
+
+        print("test_dataPreprocessor_cat_local: OK")
 
 if __name__ == "__main__":
     unittest.main()
