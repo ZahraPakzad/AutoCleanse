@@ -33,31 +33,32 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # Loading dataset
 ### adult dataset
-df = pd.read_csv('D:/#Work/Student_job_2022-23_summer/HS_Munich/data/adult.csv')
-continous_columns = ['age','fnlwgt','educational-num','capital-gain','capital-loss','hours-per-week']
-categorical_columns = ['workclass','education','marital-status','occupation','relationship','race','gender','native-country','income']
+# df = pd.read_csv('D:/#Work/Student_job_2022-23_summer/HS_Munich/data/adult.csv')
+# continous_columns = ['age','fnlwgt','educational-num','capital-gain','capital-loss','hours-per-week']
+# categorical_columns = ['workclass','education','marital-status','occupation','relationship','race','gender','native-country','income']
 
 # ### Motorbike marketplace
 ## link: https://www.kaggle.com/datasets/mexwell/motorbike-marketplace
-'''dropped the "link" column'''
+# '''dropped the "link" column''' , 'version', 'date'
 # df = pd.read_csv('D:/#Work/Student_job_2022-23_summer/HS_Munich/data/motorbikes/europe-motorbikes-zenrows.csv')
 # continous_columns = ['price','mileage','power']
-# categorical_columns = ['make_model','fuel','gear', 'offer_type','version', 'date']
+# categorical_columns = ['fuel','gear',  'make_model', 'offer_type']
 
 ### Chess
 ## link: https://www.kaggle.com/datasets/mysarahmadbhat/online-chess-games
-# df = pd.read_csv('D:/#Work/Student_job_2022-23_summer/HS_Munich/data/chess/games.csv')
-# continous_columns = [ 'white_rating', 'black_rating', 'opening_ply'] #, 'created_at', 'last_move_at'
-# categorical_columns = ['rated', 'victory_status', 'winner', 'black_id', 'moves', 'opening_eco', 'opening_name', 'increment_code'] # ,'white_id'
+'''removed: #, 'created_at', 'last_move_at', 'white_id', 'black_id', 'move', 'increment_code'''
+df = pd.read_csv('D:/#Work/Student_job_2022-23_summer/HS_Munich/data/chess/games.csv')
+continous_columns = [ 'white_rating', 'black_rating', 'opening_ply'] 
+categorical_columns = ['rated', 'victory_status', 'winner'] 
 
 
 ### E-commernce customer behaviour
 ## link: https://www.kaggle.com/datasets/shriyashjagtap/e-commerce-customer-for-behavior-analysis
 '''
-# delete ID and Age (repeated) 
-#'Purchase Date' removed (test out of memory 279 GB -> 50 GB), 
-# 'Customer Name' (removed: 50GB -> no error)
-'''
+# # delete ID and Age (repeated) 
+# #'Purchase Date' removed (test out of memory 279 GB -> 50 GB), 
+# # 'Customer Name' (removed: 50GB -> no error)
+# '''
 # df = pd.read_csv('D:/#Work/Student_job_2022-23_summer/HS_Munich/data/user_behaviour/ecommerce_customer_data_custom_ratios.csv')
 # continous_columns = ['Product Price', 'Quantity', 'Total Purchase Amount','Customer Age', 'Returns' , 'Churn']
 # categorical_columns = ['Product Category', 'Payment Method', 'Gender']
@@ -114,7 +115,7 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, dro
 
 # Declaring model
 layers = [X_test.shape[1]]+layers                                  
-autoencoder, encoder, decoder, optimizer = build_autoencoder(layers,dropout=[(0,0.1)],load_method="local")
+autoencoder, encoder, decoder, optimizer = build_autoencoder(layers,dropout=[(0,0.1)],load_method=None) # change to None before the first round of training
 
 scheduler = StepLR(optimizer, step_size=30, gamma=0.1)   # LR*0.1 every 30 epochs
 

@@ -27,7 +27,7 @@ def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loa
     """
     best_loss = float('inf')
     best_state_dict = None
-
+    counter = 0
     # Training loop
     for epoch in range(num_epochs):
         train_progress = tqdm(train_loader, desc=f'Epoch [{epoch+1}/{num_epochs}], training progress', position=0, leave=True)
