@@ -6,7 +6,7 @@ from tqdm import tqdm
 from AutoEncoder.loss_model import loss_CEMSE
 from AutoEncoder.bucketfs_client import BucketFS_client
 
-def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loader,continous_columns,categorical_columns,onehotencoder,scaler,optimizer,scheduler,device,save=None):
+def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loader,onehotencoder,scaler,optimizer,scheduler,device,continous_columns=None,categorical_columns=None,save=None):
     """
      @brief Autoencoder trainer
      @param autoencoder: Autoencoder object
@@ -40,7 +40,7 @@ def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loa
             inputs = inputs.to(device)
             outputs = autoencoder(inputs)
 
-            loss = loss_CEMSE(inputs, outputs, continous_columns, categorical_columns, onehotencoder, scaler)
+            loss = loss_CEMSE(inputs, outputs, onehotencoder, scaler, continous_columns, categorical_columns)
 
             # Backward pass and optimization
             optimizer.zero_grad()
@@ -64,7 +64,7 @@ def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loa
             val_inputs = val_inputs.to(device)
             val_outputs = autoencoder(val_inputs)
 
-            val_loss = loss_CEMSE(val_inputs, val_outputs, continous_columns, categorical_columns, onehotencoder, scaler)
+            val_loss = loss_CEMSE(val_inputs, val_outputs, onehotencoder, scaler, continous_columns, categorical_columns)
 
             val_running_loss += val_loss.item()*batch_size
             val_running_sample_count += val_inputs.shape[0]
