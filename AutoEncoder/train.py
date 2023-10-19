@@ -27,7 +27,7 @@ def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loa
     """
     best_loss = float('inf')
     best_state_dict = None
-
+    autoencoder.to(device)
     counter = 0
     # Training loop
     for epoch in range(num_epochs):
