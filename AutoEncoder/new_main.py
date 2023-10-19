@@ -39,17 +39,17 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # ### Motorbike marketplace
 ## link: https://www.kaggle.com/datasets/mexwell/motorbike-marketplace
-# '''dropped the "link" column''' , 'version', 'date'
-# df = pd.read_csv('D:/#Work/Student_job_2022-23_summer/HS_Munich/data/motorbikes/europe-motorbikes-zenrows.csv')
-# continous_columns = ['price','mileage','power']
-# categorical_columns = ['fuel','gear',  'make_model', 'offer_type']
+'''dropped the "link" column''' , 'version', 'date'
+df = pd.read_csv('D:/#Work/Student_job_2022-23_summer/HS_Munich/data/motorbikes/europe-motorbikes-zenrows.csv')
+continous_columns = ['price','mileage','power']
+categorical_columns = ['fuel','gear',  'make_model', 'offer_type']
 
 ### Chess
 ## link: https://www.kaggle.com/datasets/mysarahmadbhat/online-chess-games
 '''removed: #, 'created_at', 'last_move_at', 'white_id', 'black_id', 'move', 'increment_code'''
-df = pd.read_csv('D:/#Work/Student_job_2022-23_summer/HS_Munich/data/chess/games.csv')
-continous_columns = [ 'white_rating', 'black_rating', 'opening_ply'] 
-categorical_columns = ['rated', 'victory_status', 'winner'] 
+# df = pd.read_csv('D:/#Work/Student_job_2022-23_summer/HS_Munich/data/chess/games.csv')
+# continous_columns = [ 'white_rating', 'black_rating', 'opening_ply'] 
+# categorical_columns = ['rated', 'victory_status', 'winner','white_id'] 
 
 
 ### E-commernce customer behaviour
@@ -63,7 +63,7 @@ categorical_columns = ['rated', 'victory_status', 'winner']
 # continous_columns = ['Product Price', 'Quantity', 'Total Purchase Amount','Customer Age', 'Returns' , 'Churn']
 # categorical_columns = ['Product Category', 'Payment Method', 'Gender']
 
-
+### 
 
 og_columns = df.columns.to_list()
 df = df[continous_columns+categorical_columns]

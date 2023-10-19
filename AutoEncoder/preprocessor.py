@@ -50,7 +50,7 @@ def dataPreprocessor(input_df,is_train: bool,continous_columns: list,categorical
       client = BucketFS_client()
 
     scaler = StandardScaler()
-    onehotencoder = OneHotEncoder(sparse=False)
+    onehotencoder = OneHotEncoder(sparse=False, handle_unknown='ignore')
 
     layers=[0]+layers #@TODO: just an ugly hack using padding to get the correct name for saved weight.
     prefix = generate_autoencoder_name(layers,location)[:-4] # Name prefix of saved scaler/encoder
