@@ -20,7 +20,7 @@ def clean(autoencoder,test_df,test_loader,batch_size,continous_columns,categoric
      @param device: can be "cpu" or "cuda"
     """
     autoencoder.eval()
-
+    autoencoder.to(device)
     clean_progress = tqdm(test_loader, desc=f'Clean progress', position=0, leave=True)
     clean_outputs = torch.empty(0).to(device)
     clean_loss = torch.empty(0).to(device)

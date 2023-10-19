@@ -32,3 +32,27 @@ class BucketFS_client():
         """
         data = data = io.BytesIO(as_bytes(self.bucket.download(file_path)))
         return data
+
+    def check(self,file_path):
+        """
+         @brief Check if file is in BucketFS
+         @param file_path: Full path and file name in BucketFS
+        """
+        for file in self.bucket:
+            if (file == file_path):
+                return True
+        return False
+
+    def delete(self,file_path):
+        """
+         @brief Delete file in BucketFS
+         @param file_path: Full path and file name in BucketFS
+        """
+        self.bucket.delete(file_path)
+
+    def view(self):
+        """
+         @brief View all files in BucketFS
+        """
+        for file in self.bucket:
+            print(file)

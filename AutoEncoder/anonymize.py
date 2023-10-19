@@ -12,6 +12,7 @@ def anonymize(encoder,test_df,test_loader,batch_size,device):
      @param device: can be "cpu" or "cuda"
     """
     encoder.eval()
+    encoder.to(device)
     anonymize_progress = tqdm(test_loader, desc=f'Anonymize progress', position=0, leave=True)
 
     anonymized_outputs = torch.empty(0).to(device)

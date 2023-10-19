@@ -79,9 +79,7 @@ layers = [X_test.shape[1]]+layers
 autoencoder, encoder, decoder, optimizer = build_autoencoder(layers,dropout=[(0,0.1)],load_method="local")
 
 scheduler = StepLR(optimizer, step_size=30, gamma=0.1)   # LR*0.1 every 30 epochs
-
-autoencoder.to(device)
-summary(autoencoder, (X_test.shape))
+# summary(autoencoder, (X_test.shape))
 
 train(autoencoder=autoencoder,
       patience=15,
@@ -97,7 +95,7 @@ train(autoencoder=autoencoder,
       optimizer=optimizer,
       scheduler=scheduler,
       device=device,
-      save="local")
+      save=None)
 
 cleaned_data = clean(autoencoder=autoencoder,
                      test_loader=test_loader,
