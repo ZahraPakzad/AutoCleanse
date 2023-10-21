@@ -39,31 +39,42 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 # ### Motorbike marketplace
 ## link: https://www.kaggle.com/datasets/mexwell/motorbike-marketplace
-'''dropped the "link" column''' , 'version', 'date'
-df = pd.read_csv('D:/#Work/Student_job_2022-23_summer/HS_Munich/data/motorbikes/europe-motorbikes-zenrows.csv')
+df_bike = pd.read_csv('D:/#Work/Student_job_2022-23_summer/HS_Munich/data/motorbikes/europe-motorbikes-zenrows.csv')
+df = df_bike.drop(['link', 'version', 'date'], axis=1, inplace=False)
 continous_columns = ['price','mileage','power']
 categorical_columns = ['fuel','gear',  'make_model', 'offer_type']
 
 ### Chess
 ## link: https://www.kaggle.com/datasets/mysarahmadbhat/online-chess-games
-'''removed: #, 'created_at', 'last_move_at', 'white_id', 'black_id', 'move', 'increment_code'''
-# df = pd.read_csv('D:/#Work/Student_job_2022-23_summer/HS_Munich/data/chess/games.csv')
+# df_chess = pd.read_csv('D:/#Work/Student_job_2022-23_summer/HS_Munich/data/chess/games.csv')
+# df = df_chess.drop(['Purchase Date','Customer Name', 'ID', 'Age','created_at', 'last_move_at', 'white_id', 'black_id', 'move', 'increment_code'], axis=1, inplace=False)
 # continous_columns = [ 'white_rating', 'black_rating', 'opening_ply'] 
 # categorical_columns = ['rated', 'victory_status', 'winner','white_id'] 
 
-
-### E-commernce customer behaviour
+### E-commerce customer behaviour
 ## link: https://www.kaggle.com/datasets/shriyashjagtap/e-commerce-customer-for-behavior-analysis
 '''
 # # delete ID and Age (repeated) 
-# #'Purchase Date' removed (test out of memory 279 GB -> 50 GB), 
-# # 'Customer Name' (removed: 50GB -> no error)
 # '''
-# df = pd.read_csv('D:/#Work/Student_job_2022-23_summer/HS_Munich/data/user_behaviour/ecommerce_customer_data_custom_ratios.csv')
+# df_ecommerce =  pd.read_csv('D:/#Work/Student_job_2022-23_summer/HS_Munich/data/user_behaviour/ecommerce_customer_data_custom_ratios.csv')
+# df = df_ecommerce.drop(['Purchase Date','Customer Name', 'ID', 'Age'], axis=1, inplace=False)
 # continous_columns = ['Product Price', 'Quantity', 'Total Purchase Amount','Customer Age', 'Returns' , 'Churn']
 # categorical_columns = ['Product Category', 'Payment Method', 'Gender']
 
-### 
+### Wine 
+### link: https://www.kaggle.com/datasets/zynicide/wine-reviews
+# df_wine_review = pd.read_csv('D:/#Work/Student_job_2022-23_summer/HS_Munich/data/wine_review/winemag-data-130k-v2.csv')
+# df = df_wine_review.drop(['Unnamed: 0', 'description', 'designation', 'region_1', 'title', 'variety', 'winery'], axis=1, inplace=False)
+# continous_columns = ['points', 'price']
+# categorical_columns = ['country', 'province', 'region_2', 'taster_name', 'taster_twitter_handle']
+
+### Jobs dataset # VERY LARGE DATASET ~1.6 MILLION ROWS - NOT TESTED
+### link: https://www.kaggle.com/datasets/ravindrasinghrana/job-description-dataset
+# df_jobs = pd.read_csv('D:/#Work/Student_job_2022-23_summer/HS_Munich/data/job_dataset_dataanalysis/job_descriptions.csv')
+# df = df_jobs.drop(['Job Id', 'Company Size', 'Contact Person', 'Contact', 'Job Posting Date'], axis=1, inplace=False)
+# continous_columns = ['latitude', 'longitude', 'Work Type', ]
+# categorical_columns = ['Experience', 'Qualifications', 'Salary Range', 'location', 'Country', 'Preference', 'Job Title', 'Role', 'Job Portal', 'Job Description', 'Benefits', 'skills', 'Responsibilities', 'Company', 'Company Profile']
+
 
 og_columns = df.columns.to_list()
 df = df[continous_columns+categorical_columns]
