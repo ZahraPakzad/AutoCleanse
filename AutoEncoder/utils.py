@@ -4,6 +4,7 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_validate
 from sklearn.inspection import permutation_importance
+import numpy as np
 from numpy import mean, max, prod, array, hstack
 from numpy.random import choice
 import torch
@@ -79,3 +80,28 @@ def generate_autoencoder_name(layer_sizes,load_method=None):
     elif (load_method==None):
         autoencoder_name = None
     return autoencoder_name
+
+def replace_with_nan(dataframe, ratio, random_seed):
+    if not 0 <= ratio <= 1:
+        raise ValueError("Ratio must be between 0 and 1.")
+    np.random.seed(random_seed)
+
+    # Calculate the number of elements to replace with NaN
+    num_elements_to_replace = int(dataframe.size * ratio)
+
+    # Create a mask with the same shape as the DataFrame
+    mask = np.zeros(dataframe.shape, dtype=bool)
+
+    # Flatten the mask and select random positions to set to True
+    flat_mask = mask.ravel()
+    flat_mask[:num_elements_to_replace] = 1
+    
+    np.random.shuffle(flat_mask)
+
+    # Reshape the flat mask to the original shape
+    mask = flat_mask.reshape(dataframe.shape)
+    
+    # Replace elements based on the mask
+    dataframe[mask] = np.nan
+    return dataframe.astype(float)
+
