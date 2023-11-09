@@ -96,4 +96,5 @@ def replace_with_nan(dataframe, ratio, seed):
 
     # Reshape the flat data back to the original shape
     dataframe[:] = flat_data.reshape(dataframe.shape)
+    return dataframe
 

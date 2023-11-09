@@ -3,7 +3,7 @@ import pandas as pd
 from tqdm import tqdm
 from AutoEncoder.utils import argmax,softmax
 
-def clean(autoencoder,test_df,test_loader,batch_size,continous_columns,categorical_columns,og_columns,onehotencoder,scaler,device):
+def clean(autoencoder,test_df,test_loader,test_loader_og,batch_size,continous_columns,categorical_columns,og_columns,onehotencoder,scaler,device):
     """
      @brief Data cleaning using the whole autoencoder
      @param autoencoder: Autoencoder object
@@ -19,20 +19,25 @@ def clean(autoencoder,test_df,test_loader,batch_size,continous_columns,categoric
     """
     autoencoder.eval()
     autoencoder.to(device)
-    clean_progress = tqdm(test_loader, desc=f'Clean progress', position=0, leave=True)
+    clean_progress = tqdm(zip(test_loader,test_loader_og), desc=f'Clean progress', total=len(test_loader), position=0, leave=True)
     clean_outputs = torch.empty(0).to(device)
     clean_loss = torch.empty(0).to(device)
     with torch.no_grad():
-        for inputs,_ in clean_progress:
+        for batch_test,batch_test_og in clean_progress:
+            inputs,_ = batch_test
+            inputs_og,_ = batch_test_og
             inputs = inputs.to(device)
+            inputs_og = inputs_og.to(device)
+
             outputs = autoencoder(inputs)
             outputs_con = outputs[:,:len(continous_columns)]
             outputs_cat = outputs[:,len(continous_columns):]
             outputs_cat = argmax(outputs_cat, onehotencoder, continous_columns, categorical_columns, device)
             outputs_final = torch.cat((outputs_con,outputs_cat),dim=1)
+
             clean_outputs = torch.cat((clean_outputs,outputs_final),dim=0)
 
-            loss = torch.mean(torch.abs(outputs_final-inputs),dim=1)
+            loss = torch.mean(torch.abs(outputs_final-inputs_og),dim=1)
 
             clean_loss = torch.cat((clean_loss,loss),dim=0)
     avg_loss = torch.mean(clean_loss)
