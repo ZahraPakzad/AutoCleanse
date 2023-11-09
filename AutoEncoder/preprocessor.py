@@ -128,4 +128,8 @@ def dataPreprocessor(input_df,is_train: bool,layers: list,continous_columns: lis
       input_df = pd.concat([input_df,input_df_encoded_part],axis=1)
       input_df.drop(columns=categorical_columns, inplace=True)
 
+    nan_columns = [col for col in input_df.columns if '_nan' in col]
+    input_df.drop(columns=nan_columns, inplace=True)
+    input_df.fillna(0.0, inplace=True)
+
     return input_df,scaler,onehotencoder

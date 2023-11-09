@@ -4,17 +4,16 @@ import unittest
 import os
 from AutoEncoder.preprocessor import *
 from AutoEncoder.bucketfs_client import *
+from AutoEncoder.utils import replace_with_nan
 
-data = {'Numerical': [11,22,33,44,55,66,77,88,99,00], 'Categorical': ['A','C','B','A','D','C','B','D','D','C']}
-data_con = {'Numerical': [11,22,33,44,55,66,77,88,99,00]}
-data_cat = {'Categorical': ['A','C','B','A','D','C','B','D','D','C']}
+data = {'Numerical': [11,22,33,44,55,66,77,88,99,00], 
+        'Categorical': ['A','C','B','A','D','C','B','D','D','C']}
 
 class test_preprocessor(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(test_preprocessor, self).__init__(*args, **kwargs)
         self.df = pd.DataFrame(data)
-        self.df_con = pd.DataFrame(data_con)
-        self.df_cat = pd.DataFrame(data_cat)
+
 
     def test_dataSplitter(self):
         # Test nominal output value
