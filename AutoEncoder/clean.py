@@ -1,5 +1,6 @@
 import torch
 import pandas as pd
+import torch.nn.functional as F
 from tqdm import tqdm
 from AutoEncoder.utils import argmax,softmax
 
@@ -20,8 +21,9 @@ def clean(autoencoder,test_df,test_loader,test_loader_og,batch_size,continous_co
     autoencoder.eval()
     autoencoder.to(device)
     clean_progress = tqdm(zip(test_loader,test_loader_og), desc=f'Clean progress', total=len(test_loader), position=0, leave=True)
-    clean_outputs = torch.empty(0).to(device)
-    clean_loss = torch.empty(0).to(device)
+    clean_outputs = torch.empty(0, device=device)
+    MAE = torch.empty(0, device=device)
+    MSE = torch.empty(0, device=device)
     with torch.no_grad():
         for batch_test,batch_test_og in clean_progress:
             inputs,_ = batch_test
@@ -37,11 +39,15 @@ def clean(autoencoder,test_df,test_loader,test_loader_og,batch_size,continous_co
 
             clean_outputs = torch.cat((clean_outputs,outputs_final),dim=0)
 
-            loss = torch.mean(torch.abs(outputs_final-inputs_og),dim=1)
+            MAEloss = torch.unsqueeze(F.l1_loss(outputs_final,inputs_og),dim=0)
+            MSEloss = torch.unsqueeze(F.mse_loss(outputs_final,inputs_og),dim=0)
 
-            clean_loss = torch.cat((clean_loss,loss),dim=0)
-    avg_loss = torch.mean(clean_loss)
-    print(f'\nMAE: {avg_loss:.8f}')
+            MAE = torch.cat((MAE,MAEloss),dim=0)
+            MSE = torch.cat((MSE,MSEloss),dim=0)
+    MAEavg = torch.mean(MAE)
+    MSEavg = torch.mean(MSE)
+    print(f'\nMAE: {MAEavg:.8f}')
+    print(f'\nMSE: {MSEavg:.8f}')
 
     clean_data = pd.DataFrame(clean_outputs.detach().cpu().numpy(),columns=test_df.columns,index=test_df.index[:(test_df.shape[0] // batch_size) * batch_size])
     decoded_cat_cols = pd.DataFrame(onehotencoder.inverse_transform(clean_data.iloc[:,len(continous_columns):]),index=clean_data.index,columns=categorical_columns)
