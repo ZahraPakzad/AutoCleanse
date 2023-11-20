@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-def loss_CEMSE(input, outputs, encoder, scaler, continous_columns=None, categorical_columns=None):
+def loss_CEMSE(input, outputs, encoder, scaler, continous_columns=[], categorical_columns=[]):
     """
      @brief Calculates cross entropy loss and mean square error loss of a dataframe correspondingly to continous and categorical columns
      @param input: The input tensor which is a batch of dataframe rows
@@ -16,23 +16,25 @@ def loss_CEMSE(input, outputs, encoder, scaler, continous_columns=None, categori
     output_continous = None
     column_map = None
     slice_list = []
-    encoded_columns = encoder.categories_
-    if (categorical_columns is not None and continous_columns is not None):
+    
+    if (len(categorical_columns)!=0 and len(continous_columns)!=0):
+        encoded_columns = encoder.categories_
         column_map = {column: encoded_columns[i] for i, column in enumerate(categorical_columns)} # Map categorical columns with onehot subcolumns
         output_categorical = outputs[:,len(continous_columns):]
         output_continous = outputs[:,:len(continous_columns)]
         for i in list(column_map):
             slice_list.append(column_map[i].shape[0])
-    elif (continous_columns is None):
+    elif (len(continous_columns)!=0):
+        encoded_columns = encoder.categories_
         column_map = {column: encoded_columns[i] for i, column in enumerate(categorical_columns)} # Map categorical columns with onehot subcolumns
         output_categorical = outputs
         for i in list(column_map):
             slice_list.append(column_map[i].shape[0])
-    elif (categorical_columns is None):
+    elif (len(categorical_columns)!=0):
         output_continous = outputs 
 
     CEloss = 0
-    if (categorical_columns is not None):
+    if (len(categorical_columns)!=0):
         # CE loss for each subcolumn group
         Catcols = {}
         CElosses = {}
@@ -51,18 +53,16 @@ def loss_CEMSE(input, outputs, encoder, scaler, continous_columns=None, categori
             CElosses[f"_{i}"] = nn.CrossEntropyLoss()(Catcols[f"_{i}"],torch.argmax(input[:,start_index:end_index],dim=1)) # Averaged over minibatch
             start_index_1h = end_index_1h
             start_index = end_index
-
-        if (len(categorical_columns)==0):
-            pass
-        else:
-            for value in CElosses.values():
-                CEloss += value
+        
+        for value in CElosses.values():
+            CEloss += value            
+    else:
+        pass        
 
     MSEloss = 0
-    if (continous_columns is not None):
-        if (len(continous_columns)==0):
-            pass
-        else:
-            MSEloss = nn.MSELoss()(output_continous, input[:,:len(continous_columns)])
+    if (len(continous_columns)!=0):
+        MSEloss = nn.MSELoss()(output_continous, input[:,:len(continous_columns)])
+    else:
+        pass        
 
-    return MSEloss + CEloss
+    return CEloss,MSEloss
