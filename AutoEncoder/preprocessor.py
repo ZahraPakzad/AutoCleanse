@@ -2,7 +2,7 @@ import pandas as pd
 import joblib
 import io
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
+from sklearn.preprocessing import *
 from AutoEncoder.bucketfs_client import BucketFS_client
 from AutoEncoder.utils import generate_autoencoder_name
 
@@ -33,7 +33,7 @@ def dataSplitter(input_df,train_ratio: float,val_ratio: float,test_ratio: float,
     return X_train,X_val,X_test
 
 
-def dataPreprocessor(input_df,is_train: bool,layers: list,continous_columns: list=None,categorical_columns: list=None,location: str="local"):
+def dataPreprocessor(input_df,is_train: bool,layers: list,continous_columns: list,categorical_columns: list,location: str="local"):
     """
      @brief apply scaling and encoding to the input dataframe
      @param input_df: Input dataframe    
@@ -51,13 +51,13 @@ def dataPreprocessor(input_df,is_train: bool,layers: list,continous_columns: lis
     if (location == "BucketFS"):
       client = BucketFS_client()
 
-    scaler = StandardScaler()
+    scaler = MinMaxScaler()
     onehotencoder = OneHotEncoder(sparse=False)
 
     layers=[0]+layers #@TODO: just an ugly hack using padding to get the correct name for saved weight.
     prefix = generate_autoencoder_name(layers,location)[:-4] # Name prefix of saved scaler/encoder
     # Preprocess continous columns
-    if (continous_columns is not None):
+    if (len(continous_columns)!=0):
       if (is_train == True):
         input_df_scaled = scaler.fit_transform(input_df[continous_columns])
         if (location=="BucketFS"):
@@ -92,7 +92,7 @@ def dataPreprocessor(input_df,is_train: bool,layers: list,continous_columns: lis
       input_df[continous_columns] = input_df_scaled
 
     # Preprocess categorical columns
-    if (categorical_columns is not None):
+    if (len(categorical_columns)!=0):
       if (is_train == True):
         input_df_encoded = onehotencoder.fit_transform(input_df[categorical_columns])
         if (location=="BucketFS"):
