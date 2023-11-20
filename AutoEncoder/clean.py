@@ -32,10 +32,16 @@ def clean(autoencoder,test_df,test_loader,test_loader_og,batch_size,continous_co
             inputs_og = inputs_og.to(device)
 
             outputs = autoencoder(inputs)
-            outputs_con = outputs[:,:len(continous_columns)]
-            outputs_cat = outputs[:,len(continous_columns):]
-            outputs_cat = argmax(outputs_cat, onehotencoder, continous_columns, categorical_columns, device)
-            outputs_final = torch.cat((outputs_con,outputs_cat),dim=1)
+            outputs_final = torch.empty(0, device=device)
+            if (len(continous_columns)!=0 and len(categorical_columns)!=0):
+                outputs_con = outputs[:,:len(continous_columns)]
+                outputs_cat = outputs[:,len(continous_columns):]
+                outputs_cat = argmax(outputs_cat, onehotencoder, continous_columns, categorical_columns, device)
+                outputs_final = torch.cat((outputs_con,outputs_cat),dim=1)
+            elif (len(continous_columns)==0):                
+                outputs_final = argmax(outputs, onehotencoder, continous_columns, categorical_columns, device)
+            elif (len(categorical_columns)==0):
+                outputs_final = outputs
 
             clean_outputs = torch.cat((clean_outputs,outputs_final),dim=0)
 
@@ -50,9 +56,15 @@ def clean(autoencoder,test_df,test_loader,test_loader_og,batch_size,continous_co
     print(f'\nMSE: {MSEavg:.8f}')
 
     clean_data = pd.DataFrame(clean_outputs.detach().cpu().numpy(),columns=test_df.columns,index=test_df.index[:(test_df.shape[0] // batch_size) * batch_size])
-    decoded_cat_cols = pd.DataFrame(onehotencoder.inverse_transform(clean_data.iloc[:,len(continous_columns):]),index=clean_data.index,columns=categorical_columns)
-    decoded_con_cols = pd.DataFrame(scaler.inverse_transform(clean_data.iloc[:,:len(continous_columns)]),index=clean_data.index,columns=continous_columns).round(0)
-    clean_data = pd.concat([decoded_con_cols,decoded_cat_cols],axis=1).reindex(columns=og_columns)
+    if (len(continous_columns)!=0 and len(categorical_columns)!=0):
+        decoded_cat_cols = pd.DataFrame(onehotencoder.inverse_transform(clean_data.iloc[:,len(continous_columns):]),index=clean_data.index,columns=categorical_columns)
+        decoded_con_cols = pd.DataFrame(scaler.inverse_transform(clean_data.iloc[:,:len(continous_columns)]),index=clean_data.index,columns=continous_columns).round(0)
+        clean_data = pd.concat([decoded_con_cols,decoded_cat_cols],axis=1).reindex(columns=og_columns)
+    elif (len(continous_columns)==0):
+        clean_data = pd.DataFrame(onehotencoder.inverse_transform(clean_data),index=clean_data.index,columns=categorical_columns)
+    elif (len(categorical_columns)==0):
+        clean_data = pd.DataFrame(scaler.inverse_transform(clean_data),index=clean_data.index,columns=continous_columns).round(0)
+    
     return clean_data
 
 def outlier_dectection():
