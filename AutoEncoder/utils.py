@@ -98,3 +98,10 @@ def replace_with_nan(dataframe, ratio, seed):
     dataframe[:] = flat_data.reshape(dataframe.shape)
     return dataframe
 
+def string2list(input: str):
+    output = list(map(int, input.split(',')))
+    return output
+
+def string2tupple(input: str):
+    output = tuple(map(int, input.split(',')))
+    return output
