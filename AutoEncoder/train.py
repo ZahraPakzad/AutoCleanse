@@ -6,10 +6,11 @@ from tqdm import tqdm
 from AutoEncoder.loss_model import loss_CEMSE
 from AutoEncoder.bucketfs_client import BucketFS_client
 
-def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loader,onehotencoder,scaler,optimizer,scheduler,device,continous_columns=None,categorical_columns=None,save=None):
+def train(model,num_epochs,batch_size,patience,layers,train_loader,val_loader,onehotencoder,scaler, \
+          optimizer,scheduler,device,continous_columns,categorical_columns,loss_ratio=(1,1),save=None):
     """
      @brief Autoencoder trainer
-     @param autoencoder: Autoencoder object
+     @param model: model object
      @param num_epochs: Number of training epochs 
      @param batch_size: Traning batch size
      @param patience: Number of epochs to wait before stopping the training process if validation loss does not improve
@@ -27,20 +28,25 @@ def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loa
     """
     best_loss = float('inf')
     best_state_dict = None
-    autoencoder.to(device)
+    model.to(device)
     counter = 0
     # Training loop
     for epoch in range(num_epochs):
-        train_progress = tqdm(train_loader, desc=f'Epoch [{epoch+1}/{num_epochs}], training progress', position=0, leave=True)
+        train_progress = tqdm(train_loader, desc=f'Epoch [{epoch+1}/{num_epochs}], Training Progress', position=0, leave=True)
 
         running_loss = 0.0
+        running_loss_comp = 0.0
+        running_CEloss = 0.0
+        running_MSEloss = 0.0
         running_sample_count = 0.0
         for inputs, _  in train_progress:
             # Forward pass
             inputs = inputs.to(device)
-            outputs = autoencoder(inputs)
+            outputs = model(inputs)
 
-            loss = loss_CEMSE(inputs, outputs, onehotencoder, scaler, continous_columns, categorical_columns)
+            CEloss,MSEloss = loss_CEMSE(inputs, outputs, onehotencoder, scaler, continous_columns, categorical_columns)
+            loss = loss_ratio[0]*CEloss + loss_ratio[1]*MSEloss
+            loss_comp = CEloss + MSEloss
 
             # Backward pass and optimization
             optimizer.zero_grad()
@@ -48,46 +54,69 @@ def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loa
             optimizer.step()
 
             running_loss += loss.item()*batch_size
+            running_loss_comp += loss_comp.item()*batch_size
+            running_CEloss += CEloss.item()*batch_size
+            running_MSEloss += MSEloss.item()*batch_size
             running_sample_count += inputs.shape[0]
 
         average_loss = running_loss / running_sample_count      # Final loss: multiply by batch size then averaged over all samples
-        train_progress.set_postfix({'Training Loss': average_loss})
+        average_loss_comp = running_loss_comp / running_sample_count
+        average_CEloss = running_CEloss / running_sample_count
+        average_MSEloss = running_MSEloss / running_sample_count
+        train_progress.set_postfix({"Training Loss": average_loss})
         train_progress.update()
         train_progress.close()
 
         # Calculate validation loss
-        val_progress = tqdm(val_loader, desc=f'Epoch [{epoch+1}/{num_epochs}], validation progress', position=0, leave=True)
+        val_progress = tqdm(val_loader, desc=f'Epoch [{epoch+1}/{num_epochs}], Validation Progress', position=0, leave=True)
 
         val_running_loss = 0.0
+        val_running_loss_comp = 0.0
+        val_running_CEloss = 0.0
+        val_running_MSEloss = 0.0
         val_running_sample_count = 0.0
         for val_inputs, _ in val_progress:
             val_inputs = val_inputs.to(device)
-            val_outputs = autoencoder(val_inputs)
+            val_outputs = model(val_inputs)
 
-            val_loss = loss_CEMSE(val_inputs, val_outputs, onehotencoder, scaler, continous_columns, categorical_columns)
+            val_CEloss,val_MSEloss = loss_CEMSE(val_inputs, val_outputs, onehotencoder, scaler, continous_columns, categorical_columns)
+            val_loss = loss_ratio[0]*val_CEloss + loss_ratio[1]*val_MSEloss
+            val_loss_comp = val_CEloss + val_MSEloss
 
             val_running_loss += val_loss.item()*batch_size
+            val_running_loss_comp += val_loss_comp.item()*batch_size
+            val_running_CEloss += val_CEloss.item()*batch_size
+            val_running_MSEloss += val_MSEloss.item()*batch_size
             val_running_sample_count += val_inputs.shape[0]
 
         val_avg_loss = val_running_loss / val_running_sample_count
-        val_progress.set_postfix({'Validation Loss': val_avg_loss})
+        val_avg_loss_comp = val_running_loss_comp / val_running_sample_count
+        val_average_CEloss = val_running_CEloss / val_running_sample_count
+        val_average_MSEloss = val_running_MSEloss / val_running_sample_count
+        val_progress.set_postfix({"Validation Loss": val_avg_loss})
         val_progress.update()
         val_progress.close()
 
         # Check if validation loss has improved
-        if val_avg_loss < best_loss - 0.0001:
+        if val_avg_loss < best_loss - 0.001:
             best_loss = val_avg_loss
-            best_state_dict = autoencoder.state_dict()
+            best_state_dict = model.state_dict()
             counter = 0
         else:
             counter += 1
 
         print(f"Epoch [{epoch+1}/{num_epochs}], Training Loss: {average_loss:.8f}")
         print(f"Epoch [{epoch+1}/{num_epochs}], Validation Loss: {val_avg_loss:.8f}")
+        print(f"Epoch [{epoch+1}/{num_epochs}], Training CE Loss: {average_CEloss:.8f}")
+        print(f"Epoch [{epoch+1}/{num_epochs}], Validation CE Loss: {val_average_CEloss:.8f}")
+        print(f"Epoch [{epoch+1}/{num_epochs}], Training MSE Loss: {average_MSEloss:.8f}")
+        print(f"Epoch [{epoch+1}/{num_epochs}], Validation MSE Loss: {val_average_MSEloss:.8f}")
+        print(f"Epoch [{epoch+1}/{num_epochs}], Training Loss Comp: {average_loss_comp:.8f}")
+        print(f"Epoch [{epoch+1}/{num_epochs}], Validation Loss Comp: {val_avg_loss_comp:.8f}")
 
         # Update the learning rate
         scheduler.step()
-        print(f"Epoch [{epoch+1}/{num_epochs}]: Learning rate = {scheduler.get_last_lr()}\n")
+        print(f"Epoch [{epoch+1}/{num_epochs}]: Learning Rate = {scheduler.get_last_lr()}\n")
 
         # Early stopping condition
         if counter >= patience:
@@ -97,16 +126,16 @@ def train(autoencoder,num_epochs,batch_size,patience,layers,train_loader,val_loa
      
     # Save training weight 
     if (save is not None): 
-        autoencoder.load_state_dict(best_state_dict)
+        model.load_state_dict(best_state_dict)
         layers_str = '_'.join(str(item) for item in layers[1:]) #@TODO: file name hack
-        file_name = f'autoencoder_{layers_str}.pth'
+        file_name = f'autoencoder_{layers_str}_{loss_ratio}.pth'
         if (save=="BucketFS"):   
             buffer = io.BytesIO()
-            torch.save(autoencoder.state_dict(), buffer)
+            torch.save(model.state_dict(), buffer)
             client = BucketFS_client()
             client.upload(f'autoencoder/{file_name}', buffer)
         elif (save=="local"):
-            torch.save(autoencoder.state_dict(), file_name)
+            torch.save(model.state_dict(), file_name)
             print(f'Saved weight to {file_name}')
     else:
         pass
