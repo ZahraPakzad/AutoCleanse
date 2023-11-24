@@ -40,9 +40,9 @@ class test_autoencoder(unittest.TestCase):
             os.remove(f"autoencoder_50_20_2_scaler.pkl")
         if os.path.exists(f"autoencoder_50_20_2_encoder.pkl"):
             os.remove(f"autoencoder_50_20_2_encoder.pkl")    
-        train_dataset = MyDataset(X_train)
-        val_dataset = MyDataset(X_val)
-        test_dataset = MyDataset(self.X_test)     
+        train_dataset = TargetlessDataset(X_train)
+        val_dataset = TargetlessDataset(X_val)
+        test_dataset = TargetlessDataset(self.X_test)     
         def custom_collate_fn(batch):
             tensor_data = torch.stack([item[0] for item in batch])
             indices = [item[1] for item in batch]
