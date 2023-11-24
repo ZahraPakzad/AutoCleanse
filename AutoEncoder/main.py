@@ -4,13 +4,15 @@ import torch.nn as nn
 import time
 import io
 import joblib
+import argparse
+
 from torch.optim.lr_scheduler import StepLR
 from torchsummary import summary
 from tqdm import tqdm
 from tabulate import tabulate
 
-from AutoEncoder.utils import argmax, softmax, replace_with_nan
-from AutoEncoder.dataloader import MyDataset, DataLoader
+from AutoEncoder.utils import *
+from AutoEncoder.dataloader import PlainDataset, DataLoader
 from AutoEncoder.autoencoder import build_autoencoder
 from AutoEncoder.loss_model import loss_CEMSE
 from AutoEncoder.preprocessor import dataSplitter,dataPreprocessor
@@ -19,14 +21,20 @@ from AutoEncoder.clean import clean
 from AutoEncoder.anonymize import anonymize
 
 start_time = time.time()
-
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+parser = argparse.ArgumentParser()
+parser.add_argument('-l','--layers', type=str, help='Layer configuration')
+parser.add_argument('-w','--wlc', type=str, help='Weighted loss coefficient')
+args = parser.parse_args()
+
 # Loading dataset
-df = pd.read_csv('~/dataset/categorical/adult.csv').drop(columns=['fnlwgt'])
+df = pd.read_csv('~/dataset/categorical/adult.csv').drop(columns=['fnlwgt','capital.gain','capital.loss','income'])
+continous_columns = ['age','hours.per.week']
+categorical_columns = ['workclass','education','education.num','marital.status','occupation','relationship','race','sex','native.country'] 
+# continous_columns = X.select_dtypes(include=['int64', 'float64']).columns     #@TODO: make these global
+# categorical_columns = X.select_dtypes(include=['object', 'bool']).columns
 og_columns = df.columns.to_list()
-continous_columns = ['age','capital.gain','capital.loss','hours.per.week']
-categorical_columns = ['workclass','education','education.num','marital.status','occupation','relationship','race','sex','native.country','income']
 df = df[continous_columns+categorical_columns]
 
 X_train,X_val,X_test_og = dataSplitter(input_df=df,
@@ -36,14 +44,15 @@ X_train,X_val,X_test_og = dataSplitter(input_df=df,
                                     random_seed=42)
 X_test = replace_with_nan(X_test_og,0,42)
 
-layers = [1000,500,35] #@TODO: just a hack to name saved files between runs. Kinda ugly. See model declaration below to know why.
+layers = string2list(args.layers) #@TODO: just a hack to name saved files between runs. Kinda ugly. See model declaration below to know why.
+wlc = string2tupple(args.wlc)
 
 X_train,scaler,onehotencoder = dataPreprocessor(
                         input_df=X_train,
                         is_train=True,             
                         continous_columns=continous_columns,
                         categorical_columns=categorical_columns,
-                        location="local",
+                        load_method="local",
                         layers=layers)
 
 X_val,scaler,onehotencoder = dataPreprocessor(
@@ -51,7 +60,7 @@ X_val,scaler,onehotencoder = dataPreprocessor(
                         is_train=False,         
                         continous_columns=continous_columns,
                         categorical_columns=categorical_columns,
-                        location="local",
+                        load_method="local",
                         layers=layers)                            
 
 X_test,scaler,onehotencoder = dataPreprocessor(
@@ -59,7 +68,7 @@ X_test,scaler,onehotencoder = dataPreprocessor(
                         is_train=False,
                         continous_columns=continous_columns,
                         categorical_columns=categorical_columns,
-                        location="local",
+                        load_method="local",
                         layers=layers)     
 
 X_test_og,scaler,onehotencoder = dataPreprocessor(
@@ -67,14 +76,14 @@ X_test_og,scaler,onehotencoder = dataPreprocessor(
                         is_train=False,
                         continous_columns=continous_columns,
                         categorical_columns=categorical_columns,
-                        location="local",
+                        load_method="local",
                         layers=layers)                            
 
 # Create dataloader
-train_dataset = MyDataset(X_train)
-val_dataset = MyDataset(X_val)
-test_dataset = MyDataset(X_test)
-test_dataset_og = MyDataset(X_test_og)
+train_dataset = PlainDataset(X_train)
+val_dataset = PlainDataset(X_val)
+test_dataset = PlainDataset(X_test)
+test_dataset_og = PlainDataset(X_test_og)
 
 def custom_collate_fn(batch):
     tensor_data = torch.stack([item[0] for item in batch])
@@ -89,15 +98,17 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, dro
 test_loader_og = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, drop_last=True, collate_fn=custom_collate_fn)
 
 # Declaring model
-layers = [X_test.shape[1]]+layers                                  
-autoencoder, encoder, decoder, optimizer = build_autoencoder(layers,dropout=[(0,0.1)],learning_rate=1e-4,load_method=None)
+layers = [X_train.shape[1]]+layers                                  
+autoencoder, encoder, decoder, optimizer = Autoencoder.build_model(layers,dropout_enc=[(0,0.0)],dropout_dec=[(0,0.1)], batch_norm=True, \
+                                                             learning_rate=1e-4,weight_decay=1e-5,l1_strength=1e-5,l2_strength=1e-5, \
+                                                             load_method=None,weight_path="/home/tung/development/AutoEncoder/autoencoder_1024-128_(0.2, 0.8).pth")
 
-scheduler = StepLR(optimizer, step_size=15, gamma=0.1)   # LR*0.1 every 30 epochs
-# summary(autoencoder, (X_test.shape))
+scheduler = StepLR(optimizer, step_size=25, gamma=0.1)   # LR*0.1 every 30 epochs
+# summary(autoencoder.to(device),torch.tensor(X_train.values).float().to(device).shape[1:])
 
-train(autoencoder=autoencoder,
+autoencoder.train(model=autoencoder,
       patience=10,
-      num_epochs=100,
+      num_epochs=150,
       batch_size=batch_size,
       layers=layers,
       train_loader=train_loader,
@@ -109,6 +120,7 @@ train(autoencoder=autoencoder,
       optimizer=optimizer,
       scheduler=scheduler,
       device=device,
+      loss_ratio=wlc,
       save="local")
 
 cleaned_data = clean(autoencoder=autoencoder,
@@ -132,7 +144,7 @@ cleaned_data = clean(autoencoder=autoencoder,
 # print("\n")
 print(tabulate(df.loc[[28296,28217,8054,4223,22723],og_columns],headers=og_columns,tablefmt="simple",maxcolwidths=[None, 4]))
 print("\n")
-print(tabulate(cleaned_data.head(),headers=cleaned_data.columns.to_list(),tablefmt="simple",maxcolwidths=[None, 4]))
+print(tabulate(cleaned_data.loc[[28296,28217,8054,4223,22723]],headers=cleaned_data.columns.to_list(),tablefmt="simple",maxcolwidths=[None, 4]))
 print("\n")
 # print(tabulate(anonymized_data.round(decimals=4).iloc[:5,:32],headers=anonymized_data.columns.to_list(),tablefmt="simple",maxcolwidths=[None, 6]))
 # print("\n")
