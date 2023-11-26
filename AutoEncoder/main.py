@@ -13,7 +13,7 @@ from tabulate import tabulate
 
 from AutoEncoder.utils import *
 from AutoEncoder.dataloader import PlainDataset, DataLoader
-from AutoEncoder.autoencoder import build_autoencoder
+from AutoEncoder.autoencoder import *
 from AutoEncoder.loss_model import loss_CEMSE
 from AutoEncoder.preprocessor import dataSplitter,dataPreprocessor
 from AutoEncoder.train import train
@@ -99,7 +99,7 @@ test_loader_og = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, 
 
 # Declaring model
 layers = [X_train.shape[1]]+layers                                  
-autoencoder, encoder, decoder, optimizer = Autoencoder.build_model(layers,dropout_enc=[(0,0.0)],dropout_dec=[(0,0.1)], batch_norm=True, \
+autoencoder, encoder, decoder, optimizer = Autoencoder.build_model(layers=layers,dropout_enc=[(0,0.0)],dropout_dec=[(0,0.1)], batch_norm=True, \
                                                              learning_rate=1e-4,weight_decay=1e-5,l1_strength=1e-5,l2_strength=1e-5, \
                                                              load_method=None,weight_path="/home/tung/development/AutoEncoder/autoencoder_1024-128_(0.2, 0.8).pth")
 

@@ -64,7 +64,8 @@ class Autoencoder(nn.Module):
         x = self.decoder(x)
         return x
     
-    def build_autoencoder(self,layers,dropout_enc,dropout_dec,batch_norm,learning_rate=1e-3,weight_decay=0,l1_strength=0,l2_strength=0,load_method=None,weight_path=None):
+    @classmethod
+    def build_model(cls,layers,dropout_enc,dropout_dec,batch_norm,learning_rate=1e-3,weight_decay=0,l1_strength=0,l2_strength=0,load_method=None,weight_path=None):
         """
         @brief Build autoencoder encoder decoder and optimizer.
         @param layers: A list specifying the number of layers and their respective size

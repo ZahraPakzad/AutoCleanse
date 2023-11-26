@@ -117,7 +117,7 @@ dirty_loader = DataLoader(dirty_dataset, batch_size=batch_size, shuffle=False, d
 
 layers = [X_train.shape[1]]+layers
 
-model, optimizer = ClsNNBase.build_model(layers,dropout=[(1,0.0)], batch_norm=False, \
+model, optimizer = ClsNNBase.build_model(layers=layers,dropout=[(1,0.0)], batch_norm=False, \
                                         learning_rate=1e-3,weight_decay=1e-5,l1_strength=0,l2_strength=0, \
                                         load_method=None)
 
