@@ -81,13 +81,13 @@ def dataPreprocessor(input_df,is_train: bool,layers: list,continous_columns: lis
           try:
             scaler = joblib.load(data)
           except Exception as e:
-            raise RuntimeError(f"Failed loading {prefix}_scaler.pkl  from BucketFS") from e
+            raise RuntimeError(f"Failed loading {prefix}_scaler.pkl from BucketFS") from e
         elif (load_method=="local"):
           # Load locally
           try:
             scaler = joblib.load(f'{prefix}_scaler.pkl')
           except Exception as e:
-            raise RuntimeError(f"Failed loading {prefix}_scaler.pkl  from BucketFS") from e
+            raise RuntimeError(f"Failed loading {prefix}_scaler.pkl from local") from e
         input_df_scaled = scaler.transform(input_df[continous_columns])
       input_df[continous_columns] = input_df_scaled
 
@@ -116,13 +116,13 @@ def dataPreprocessor(input_df,is_train: bool,layers: list,continous_columns: lis
           try: 
             onehotencoder = joblib.load(data)
           except Exception as e:
-            raise RuntimeError(f"Failed loading {prefix}_encoder.pkl  from BucketFS") from e
+            raise RuntimeError(f"Failed loading {prefix}_encoder.pkl from BucketFS") from e
         elif (load_method=="local"):
           # Load locally
           try:
             onehotencoder = joblib.load(f'{prefix}_encoder.pkl')
           except Exception as e:
-            raise RuntimeError(f"Failed loading {prefix}_encoder.pkl  from BucketFS") from e
+            raise RuntimeError(f"Failed loading {prefix}_encoder.pkl from local") from e
         input_df_encoded = onehotencoder.transform(input_df[categorical_columns])
       input_df_encoded_part = pd.DataFrame(input_df_encoded, columns=onehotencoder.get_feature_names_out(categorical_columns),index=input_df.index)
       input_df = pd.concat([input_df,input_df_encoded_part],axis=1)
