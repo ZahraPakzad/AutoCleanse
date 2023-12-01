@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F 
 from AutoEncoder.bucketfs_client import BucketFS_client
-from AutoEncoder.utils import generate_suffix
+from AutoEncoder.utils import *
 from exasol.bucketfs import Service
 from tqdm import tqdm
 from AutoEncoder.loss_model import loss_CEMSE
@@ -100,11 +100,10 @@ class Autoencoder(nn.Module):
         optimizer = torch.optim.AdamW(autoencoder.parameters(), lr=learning_rate, weight_decay=weight_decay)
         return autoencoder, encoder, decoder, optimizer
 
-    def train(self,model,num_epochs,batch_size,patience,layers,train_loader,val_loader,onehotencoder,scaler, \
+    def train(self,num_epochs,batch_size,patience,layers,train_loader,val_loader,onehotencoder,scaler, \
           optimizer,scheduler,device,continous_columns,categorical_columns,loss_ratio=(1,1),save=None):
         """
         @brief Autoencoder trainer
-        @param model: model object
         @param num_epochs: Number of training epochs 
         @param batch_size: Traning batch size
         @param patience: Number of epochs to wait before stopping the training process if validation loss does not improve
@@ -122,7 +121,7 @@ class Autoencoder(nn.Module):
         """
         best_loss = float('inf')
         best_state_dict = None
-        model.to(device)
+        self.to(device)
         counter = 0
         # Training loop
         for epoch in range(num_epochs):
@@ -136,7 +135,7 @@ class Autoencoder(nn.Module):
             for inputs, _  in train_progress:
                 # Forward pass
                 inputs = inputs.to(device)
-                outputs = model(inputs)
+                outputs = self(inputs)
 
                 CEloss,MSEloss = loss_CEMSE(inputs, outputs, onehotencoder, scaler, continous_columns, categorical_columns)
                 loss = loss_ratio[0]*CEloss + loss_ratio[1]*MSEloss
@@ -171,7 +170,7 @@ class Autoencoder(nn.Module):
             val_running_sample_count = 0.0
             for val_inputs, _ in val_progress:
                 val_inputs = val_inputs.to(device)
-                val_outputs = model(val_inputs)
+                val_outputs = self(val_inputs)
 
                 val_CEloss,val_MSEloss = loss_CEMSE(val_inputs, val_outputs, onehotencoder, scaler, continous_columns, categorical_columns)
                 val_loss = loss_ratio[0]*val_CEloss + loss_ratio[1]*val_MSEloss
@@ -194,7 +193,7 @@ class Autoencoder(nn.Module):
             # Check if validation loss has improved
             if val_avg_loss < best_loss - 0.001:
                 best_loss = val_avg_loss
-                best_state_dict = model.state_dict()
+                best_state_dict = self.state_dict()
                 counter = 0
             else:
                 counter += 1
@@ -220,17 +219,82 @@ class Autoencoder(nn.Module):
         
         # Save training weight 
         if (save is not None): 
-            model.load_state_dict(best_state_dict)
+            self.load_state_dict(best_state_dict)
             layers_str = '_'.join(str(item) for item in layers[1:]) #@TODO: file name hack
             file_name = f'autoencoder_{layers_str}_{loss_ratio}.pth'
             if (save=="BucketFS"):   
                 buffer = io.BytesIO()
-                torch.save(model.state_dict(), buffer)
+                torch.save(self.state_dict(), buffer)
                 client = BucketFS_client()
                 client.upload(f'autoencoder/{file_name}', buffer)
             elif (save=="local"):
-                torch.save(model.state_dict(), file_name)
+                torch.save(self.state_dict(), file_name)
                 print(f'Saved weight to {file_name}')
         else:
             pass
+
+    def clean(self,test_df,test_loader,test_loader_og,batch_size,continous_columns,categorical_columns,og_columns,onehotencoder,scaler,device):
+        """
+        @brief Data cleaning using the whole autoencoder
+        @param test_df: Test set dataframe
+        @param test_loader: Dataloader object containing test dataset
+        @param batch_size: Cleaning batch size 
+        @param continous_columns: A list of continous column names
+        @param categorical_columns: A list of categorical column names
+        @param og_columns: A list of original columns order 
+        @param onehotencoder: Onehot encoder object
+        @param scaler: Scaler object
+        @param device: can be "cpu" or "cuda"
+        """
+        # self.eval()
+        self.to(device)
+        clean_progress = tqdm(zip(test_loader,test_loader_og), desc=f'Clean progress', total=len(test_loader), position=0, leave=True)
+        clean_outputs = torch.empty(0, device=device)
+        MAE = torch.empty(0, device=device)
+        MSE = torch.empty(0, device=device)
+        with torch.no_grad():
+            for batch_test,batch_test_og in clean_progress:
+                inputs,_ = batch_test
+                inputs_og,_ = batch_test_og
+                inputs = inputs.to(device)
+                inputs_og = inputs_og.to(device)
+
+                outputs = self(inputs)
+                outputs_final = torch.empty(0, device=device)
+                if (len(continous_columns)!=0 and len(categorical_columns)!=0):
+                    outputs_con = outputs[:,:len(continous_columns)]
+                    outputs_cat = outputs[:,len(continous_columns):]
+                    outputs_cat = argmax(outputs_cat, onehotencoder, continous_columns, categorical_columns, device)
+                    outputs_final = torch.cat((outputs_con,outputs_cat),dim=1)
+                elif (len(continous_columns)==0):                
+                    outputs_final = argmax(outputs, onehotencoder, continous_columns, categorical_columns, device)
+                elif (len(categorical_columns)==0):
+                    outputs_final = outputs
+
+                clean_outputs = torch.cat((clean_outputs,outputs_final),dim=0)
+
+                MAEloss = torch.unsqueeze(F.l1_loss(outputs_final,inputs_og),dim=0)
+                MSEloss = torch.unsqueeze(F.mse_loss(outputs_final,inputs_og),dim=0)
+
+                MAE = torch.cat((MAE,MAEloss),dim=0)
+                MSE = torch.cat((MSE,MSEloss),dim=0)
+        MAEavg = torch.mean(MAE)
+        MSEavg = torch.mean(MSE)
+        print(f'\nMAE: {MAEavg:.8f}')
+        print(f'\nMSE: {MSEavg:.8f}')
+
+        clean_data = pd.DataFrame(clean_outputs.detach().cpu().numpy(),columns=test_df.columns,index=test_df.index[:(test_df.shape[0] // batch_size) * batch_size])
+        if (len(continous_columns)!=0 and len(categorical_columns)!=0):
+            decoded_cat_cols = pd.DataFrame(onehotencoder.inverse_transform(clean_data.iloc[:,len(continous_columns):]),index=clean_data.index,columns=categorical_columns)
+            decoded_con_cols = pd.DataFrame(scaler.inverse_transform(clean_data.iloc[:,:len(continous_columns)]),index=clean_data.index,columns=continous_columns).round(0)
+            clean_data = pd.concat([decoded_con_cols,decoded_cat_cols],axis=1).reindex(columns=og_columns)
+        elif (len(continous_columns)==0):
+            clean_data = pd.DataFrame(onehotencoder.inverse_transform(clean_data),index=clean_data.index,columns=categorical_columns)
+        elif (len(categorical_columns)==0):
+            clean_data = pd.DataFrame(scaler.inverse_transform(clean_data),index=clean_data.index,columns=continous_columns).round(0)
+        
+        return clean_data
+
+    def outlier_dectection():
+        pass
         
