@@ -100,7 +100,7 @@ class Autoencoder(nn.Module):
         optimizer = torch.optim.AdamW(autoencoder.parameters(), lr=learning_rate, weight_decay=weight_decay)
         return autoencoder, encoder, decoder, optimizer
 
-    def train(self,num_epochs,batch_size,patience,layers,train_loader,val_loader,onehotencoder,scaler, \
+    def train_model(self,num_epochs,batch_size,patience,layers,train_loader,val_loader,onehotencoder,scaler, \
           optimizer,scheduler,device,continous_columns,categorical_columns,loss_ratio=(1,1),save=None):
         """
         @brief Autoencoder trainer
@@ -246,7 +246,7 @@ class Autoencoder(nn.Module):
         @param scaler: Scaler object
         @param device: can be "cpu" or "cuda"
         """
-        # self.eval()
+        self.eval()
         self.to(device)
         clean_progress = tqdm(zip(test_loader,test_loader_og), desc=f'Clean progress', total=len(test_loader), position=0, leave=True)
         clean_outputs = torch.empty(0, device=device)

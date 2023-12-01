@@ -70,7 +70,7 @@ class ClsNNBase(nn.Module):
         x = self.network(x)
         return x
 
-    def train(self,num_epochs,batch_size,patience,layers,train_loader,val_loader,onehotencoder,scaler, \
+    def train_model(self,num_epochs,batch_size,patience,layers,train_loader,val_loader,onehotencoder,scaler, \
               continous_columns,categorical_columns,device,save=None):    
         best_loss = float('inf')
         best_state_dict = None
@@ -187,6 +187,7 @@ class ClsNNBase(nn.Module):
             pass
 
     def test(self,test_loader,batch_size,device):
+        self.eval()
         test_progress = tqdm(test_loader, desc=f'Test Progress', position=0, leave=True)
 
         test_running_loss = 0.0

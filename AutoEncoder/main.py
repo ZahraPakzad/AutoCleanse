@@ -16,8 +16,6 @@ from AutoEncoder.dataloader import PlainDataset, DataLoader
 from AutoEncoder.autoencoder import *
 from AutoEncoder.loss_model import loss_CEMSE
 from AutoEncoder.preprocessor import dataSplitter,dataPreprocessor
-from AutoEncoder.train import train
-from AutoEncoder.clean import clean
 from AutoEncoder.anonymize import anonymize
 
 start_time = time.time()
@@ -44,8 +42,10 @@ X_train,X_val,X_test_og = dataSplitter(input_df=df,
                                     random_seed=42)
 X_test = replace_with_nan(X_test_og,0,42)
 
-layers = string2list(args.layers) #@TODO: just a hack to name saved files between runs. Kinda ugly. See model declaration below to know why.
-wlc = string2tupple(args.wlc)
+# layers = string2list(args.layers) #@TODO: just a hack to name saved files between runs. Kinda ugly. See model declaration below to know why.
+# wlc = string2tupple(args.wlc)
+layers = [1024,128]
+wlc = (1,5)
 
 X_train,scaler,onehotencoder = dataPreprocessor(
                         input_df=X_train,
@@ -101,39 +101,38 @@ test_loader_og = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, 
 layers = [X_train.shape[1]]+layers                                  
 autoencoder, encoder, decoder, optimizer = Autoencoder.build_model(layers=layers,dropout_enc=[(0,0.0)],dropout_dec=[(0,0.1)], batch_norm=True, \
                                                              learning_rate=1e-4,weight_decay=1e-5,l1_strength=1e-5,l2_strength=1e-5, \
-                                                             load_method=None,weight_path="/home/tung/development/AutoEncoder/autoencoder_1024-128_(0.2, 0.8).pth")
+                                                             load_method="local",weight_path="/home/tung/development/AutoEncoder/autoencoder_1024_128_(1, 5).pth")
 
 scheduler = StepLR(optimizer, step_size=25, gamma=0.1)   # LR*0.1 every 30 epochs
 # summary(autoencoder.to(device),torch.tensor(X_train.values).float().to(device).shape[1:])
 
-autoencoder.train(model=autoencoder,
-      patience=10,
-      num_epochs=150,
-      batch_size=batch_size,
-      layers=layers,
-      train_loader=train_loader,
-      val_loader=val_loader,
-      continous_columns=continous_columns, 
-      categorical_columns=categorical_columns, 
-      onehotencoder=onehotencoder, 
-      scaler=scaler,
-      optimizer=optimizer,
-      scheduler=scheduler,
-      device=device,
-      loss_ratio=wlc,
-      save="local")
+# autoencoder.train(
+#       patience=10,
+#       num_epochs=150,
+#       batch_size=batch_size,
+#       layers=layers,
+#       train_loader=train_loader,
+#       val_loader=val_loader,
+#       continous_columns=continous_columns, 
+#       categorical_columns=categorical_columns, 
+#       onehotencoder=onehotencoder, 
+#       scaler=scaler,
+#       optimizer=optimizer,
+#       scheduler=scheduler,
+#       device=device,
+#       loss_ratio=wlc,
+#       save="local")
 
-cleaned_data = clean(autoencoder=autoencoder,
-                     test_loader=test_loader,
-                     test_loader_og=test_loader_og,
-                     test_df=X_test,
-                     batch_size=batch_size,
-                     continous_columns=continous_columns, 
-                     categorical_columns=categorical_columns, 
-                     og_columns=og_columns,
-                     onehotencoder=onehotencoder, 
-                     scaler=scaler,
-                     device=device)                    
+cleaned_data = autoencoder.clean(test_loader=test_loader,
+                                test_loader_og=test_loader_og,
+                                test_df=X_test,
+                                batch_size=batch_size,
+                                continous_columns=continous_columns, 
+                                categorical_columns=categorical_columns, 
+                                og_columns=og_columns,
+                                onehotencoder=onehotencoder, 
+                                scaler=scaler,
+                                device=device)                    
 
 # anonymized_data = anonymize(encoder=encoder,
 #                             test_df=X_test,
@@ -151,3 +150,5 @@ print("\n")
 end_time = time.time()
 execution_time = end_time - start_time
 print(f"Execution time: {execution_time} seconds")
+
+# cleaned_data.to_csv('df_cleaned.csv',index=False)
