@@ -132,8 +132,8 @@ class ClsNNBase(nn.Module):
                 val_loss = nn.CrossEntropyLoss()(val_outputs,val_target)
 
                 # Metrics calculation
-                predictions = (outputs >= 0.5).float().cpu().numpy()
-                targets = target.cpu().numpy()
+                predictions = (val_outputs >= 0.5).float().cpu().numpy()
+                targets = val_target.cpu().numpy()
                 val_predictions.extend(predictions)
                 val_targets.extend(targets)
 
@@ -186,6 +186,38 @@ class ClsNNBase(nn.Module):
         else:
             pass
 
-    def test(self,model,num_epochs,batch_size,patience,layers,train_loader,val_loader,onehotencoder,scaler, \
-            optimizer,scheduler,device,continous_columns,categorical_columns,save=None):
-        pass            
+    def test(self,test_loader,batch_size,device):
+        test_progress = tqdm(test_loader, desc=f'Test Progress', position=0, leave=True)
+
+        test_running_loss = 0.0
+        test_running_sample_count = 0.0
+        test_predictions = []
+        test_targets = []
+        for test_inputs, test_target, _  in test_progress:
+            test_inputs = test_inputs.to(device)
+            test_outputs = self(test_inputs)
+            test_target = test_target.to(device)
+
+            test_loss = nn.CrossEntropyLoss()(test_outputs,test_target)
+
+            # Metrics calculation
+            predictions = (test_outputs >= 0.5).float().cpu().numpy()
+            targets = test_target.cpu().numpy()
+            test_predictions.extend(predictions)
+            test_targets.extend(targets)
+
+            test_running_loss += test_loss.item()*batch_size
+            test_running_sample_count += test_inputs.shape[0]
+
+        test_avg_loss = test_running_loss / test_running_sample_count
+        test_accuracy = accuracy_score(test_targets, test_predictions)
+        test_precision = precision_score(test_targets, test_predictions,average="macro")
+        test_recall = recall_score(test_targets, test_predictions,average="macro")
+        test_f1 = f1_score(test_targets, test_predictions,average="macro")
+
+        test_progress.set_postfix({"Validation Loss": test_avg_loss})
+        test_progress.update()
+        test_progress.close()
+
+        print(f"Test Loss  : {test_avg_loss:.8f}, Accuracy: {test_accuracy:.8f}, Precision: {test_precision:.8f}, Recall: {test_recall:.8f}, F1 Score: {test_f1:.8f}")
+
