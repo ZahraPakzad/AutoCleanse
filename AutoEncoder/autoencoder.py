@@ -3,25 +3,31 @@ import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F 
-from AutoEncoder.bucketfs_client import BucketFS_client
+
+from AutoEncoder.bucketfs_client import bucketfs_client
 from AutoEncoder.utils import *
+from AutoEncoder.loss_model import loss_CEMSE
+
 from exasol.bucketfs import Service
 from tqdm import tqdm
-from AutoEncoder.loss_model import loss_CEMSE
-from AutoEncoder.bucketfs_client import BucketFS_client
+from torch.optim.lr_scheduler import *
 
 class Autoencoder(nn.Module):
     
-    def __init__(self, layers, batch_norm, dropout_enc=None, dropout_dec=None, l1_strength=0.0, l2_strength=0.0):
+    def __init__(self, layers, batch_norm, dropout_enc=None, dropout_dec=None, l1_strength=0.0, l2_strength=0.0,
+                 learning_rate=1e-3, weight_decay=0, load_method=None, weight_path=None):
         """
          @brief Initialize Autoencoder with given layer sizes and dropout. This is the base constructor for Autoencoder. You can override it in your subclass if you want to customize the layers.
          @param layers: List of size of layers to use
          @param dropout: List of ( drop_layer, drop_chance )
         """
         super(Autoencoder, self).__init__()
+        self.layers = layers
         self.num_layers = len(layers)
+        self.wlc = None 
         self.l1_strength = l1_strength
         self.l2_strength = l2_strength
+        self.best_state_dict = None
 
         # Encoder layers
         encoder_layers = []
@@ -51,6 +57,21 @@ class Autoencoder(nn.Module):
             
         decoder_layers.append(nn.Linear(layers[0], layers[0]))
         self.decoder = nn.Sequential(*decoder_layers)
+        
+        self.optimizer = torch.optim.AdamW(self.parameters(), lr=learning_rate, weight_decay=weight_decay)
+        self.scheduler = StepLR(self.optimizer, step_size=25, gamma=0.1)
+
+        if (load_method is not None):  
+            if (weight_path is None):
+                weight_path = generate_suffix(layers,'autoencoder',load_method)  
+            if (load_method=="bucketfs"):
+                # Load weight from BuckeFS
+                weight = client.download(weight_path)
+            elif(load_method=="local"):
+                # Load weight by local file
+                with open(weight_path, 'rb') as file:
+                    weight = io.BytesIO(file.read())
+            self.load_state_dict(torch.load(weight))
 
     def add_regularization_hook(self, module, input, output):
         l1_reg = self.l1_strength * F.l1_loss(output, torch.zeros_like(output))
@@ -63,64 +84,23 @@ class Autoencoder(nn.Module):
         x = self.encoder(x)
         x = self.decoder(x)
         return x
-    
-    @classmethod
-    def build_model(cls,layers,dropout_enc,dropout_dec,batch_norm,learning_rate=1e-3,weight_decay=0,l1_strength=0,l2_strength=0,load_method=None,weight_path=None):
-        """
-        @brief Build autoencoder encoder decoder and optimizer.
-        @param layers: A list specifying the number of layers and their respective size
-        @param dropout: A list of tupple specifying dropout layers position and their respective dropout chance
-        @param learning_rate:
-        @param weight_decay:  
-        @param load_method: Weight loading method. Can be "BucketFS" or "local". Disabled by default
-        """
-        autoencoder = Autoencoder(layers=layers,
-                                dropout_enc=dropout_enc,
-                                dropout_dec=dropout_dec,
-                                batch_norm=batch_norm,
-                                l1_strength=l1_strength,
-                                l2_strength=l2_strength)
-        
-        if (weight_path is None):
-            weight_path = generate_suffix(layers,'autoencoder',load_method)
 
-        if (load_method is not None):    
-            if (load_method=="BucketFS"):
-                # Load weight from BuckeFS
-                client = BucketFS_client()
-                weight = client.download(weight_path)
-            elif(load_method=="local"):
-                # Load weight by local file
-                with open(weight_path, 'rb') as file:
-                    weight = io.BytesIO(file.read())
-            autoencoder.load_state_dict(torch.load(weight))
-
-        encoder = autoencoder.encoder
-        decoder = autoencoder.decoder
-        optimizer = torch.optim.AdamW(autoencoder.parameters(), lr=learning_rate, weight_decay=weight_decay)
-        return autoencoder, encoder, decoder, optimizer
-
-    def train_model(self,num_epochs,batch_size,patience,layers,train_loader,val_loader,onehotencoder,scaler, \
-          optimizer,scheduler,device,continous_columns,categorical_columns,loss_ratio=(1,1),save=None):
+    def train_model(self,num_epochs,batch_size,patience,train_loader,val_loader,categories, \
+                    device,continous_columns,categorical_columns,wlc=(1,1)):
         """
         @brief Autoencoder trainer
         @param num_epochs: Number of training epochs 
         @param batch_size: Traning batch size
         @param patience: Number of epochs to wait before stopping the training process if validation loss does not improve
-        @param layers: A list specifying sizes of network layers
         @param train_loader: Dataloader object containing train dataset
         @param val_loader: Dataloader object containing validation dataset
         @param continous_columns: A list of continous column names
-        @param categorical_columns: A list of categorical column names
-        @param onehotencoder: Onehot encoder object
-        @param scaler: Scaler object
-        @param optimizer: Optimizer object
-        @param scheduler: Scheduler object
+        @param categorical columns: A list of categorical column names
+        @param categories: The categories created by one-hot encoder
         @param device: Can be "cpu" or "cuda"
-        @param save: Enable saving training weight. Can be "BucketFS" or a directory path. Default None.
         """
+        self.wlc =  wlc
         best_loss = float('inf')
-        best_state_dict = None
         self.to(device)
         counter = 0
         # Training loop
@@ -137,14 +117,14 @@ class Autoencoder(nn.Module):
                 inputs = inputs.to(device)
                 outputs = self(inputs)
 
-                CEloss,MSEloss = loss_CEMSE(inputs, outputs, onehotencoder, scaler, continous_columns, categorical_columns)
-                loss = loss_ratio[0]*CEloss + loss_ratio[1]*MSEloss
+                CEloss,MSEloss = loss_CEMSE(inputs, outputs, categories, continous_columns, categorical_columns)
+                loss = wlc[0]*CEloss + wlc[1]*MSEloss
                 loss_comp = CEloss + MSEloss
 
                 # Backward pass and optimization
-                optimizer.zero_grad()
+                self.optimizer.zero_grad()
                 loss.backward()
-                optimizer.step()
+                self.optimizer.step()
 
                 running_loss += loss.item()*batch_size
                 running_loss_comp += loss_comp.item()*batch_size
@@ -172,8 +152,8 @@ class Autoencoder(nn.Module):
                 val_inputs = val_inputs.to(device)
                 val_outputs = self(val_inputs)
 
-                val_CEloss,val_MSEloss = loss_CEMSE(val_inputs, val_outputs, onehotencoder, scaler, continous_columns, categorical_columns)
-                val_loss = loss_ratio[0]*val_CEloss + loss_ratio[1]*val_MSEloss
+                val_CEloss,val_MSEloss = loss_CEMSE(val_inputs, val_outputs, categories, continous_columns, categorical_columns)
+                val_loss = wlc[0]*val_CEloss + wlc[1]*val_MSEloss
                 val_loss_comp = val_CEloss + val_MSEloss
 
                 val_running_loss += val_loss.item()*batch_size
@@ -193,7 +173,7 @@ class Autoencoder(nn.Module):
             # Check if validation loss has improved
             if val_avg_loss < best_loss - 0.001:
                 best_loss = val_avg_loss
-                best_state_dict = self.state_dict()
+                self.best_state_dict = self.state_dict()
                 counter = 0
             else:
                 counter += 1
@@ -208,8 +188,8 @@ class Autoencoder(nn.Module):
             print(f"Epoch [{epoch+1}/{num_epochs}], Validation Loss Comp: {val_avg_loss_comp:.8f}")
 
             # Update the learning rate
-            scheduler.step()
-            print(f"Epoch [{epoch+1}/{num_epochs}]: Learning Rate = {scheduler.get_last_lr()}\n")
+            self.scheduler.step()
+            print(f"Epoch [{epoch+1}/{num_epochs}]: Learning Rate = {self.scheduler.get_last_lr()}\n")
 
             # Early stopping condition
             if counter >= patience:
@@ -217,21 +197,46 @@ class Autoencoder(nn.Module):
                 break
             train_progress.close()
         
-        # Save training weight 
-        if (save is not None): 
-            self.load_state_dict(best_state_dict)
-            layers_str = '_'.join(str(item) for item in layers[1:]) #@TODO: file name hack
-            file_name = f'autoencoder_{layers_str}_{loss_ratio}.pth'
-            if (save=="BucketFS"):   
-                buffer = io.BytesIO()
-                torch.save(self.state_dict(), buffer)
-                client = BucketFS_client()
-                client.upload(f'autoencoder/{file_name}', buffer)
-            elif (save=="local"):
-                torch.save(self.state_dict(), file_name)
-                print(f'Saved weight to {file_name}')
+    def save(self,name,location):
+        self.load_state_dict(self.best_state_dict)
+        if (name is None):
+            layers_str = '_'.join(str(item) for item in self.layers) 
+            wlc_str = str(self.wlc)
+            name = f'autoencoder_{layers_str}_{wlc_str}.pth'
         else:
-            pass
+            name = f'autoencoder_{name}.pth'
+        if (location=="bucketfs"):
+            buffer = io.BytesIO()
+            torch.save(self.state_dict(), buffer)
+            try:
+                bucketfs_client().upload(f'autoencoder/{name}',buffer)
+            except Exception as e:
+                raise RuntimeError(f"Failed saving {name} to BucketFS") from e
+            print(f'Saved weight to default/autoencoder/{name}')
+        elif (location=="local"):
+            try:
+                torch.save(self.state_dict(), name)
+            except Exception as e:
+                raise RuntimeError(f"Failed saving {name} to local") from e
+            print(f'Saved weight to {name}')
+
+    def load(self,name,location):
+        weight = None
+        name = f"autoencoder_{name}.pth"
+        if (location=="bucketfs"):
+            try:
+                weight = bucketfs_client().download(f'autoencoder/{name}')
+            except Exception as e:
+                raise RuntimeError(f"Failed loading {name} from BucketFS") from e
+            print(f'Loaded weight from default/autoencoder/{name}')
+        elif (location=="local"):
+            try:
+                with open(name, 'rb') as file:
+                    weight = io.BytesIO(file.read())
+            except Exception as e:
+                raise RuntimeError(f"Failed loading {name} from local") from e
+            print(f'Loaded weight from {name}')
+        self.load_state_dict(torch.load(weight))
 
     def clean(self,test_df,test_loader,test_loader_og,batch_size,continous_columns,categorical_columns,og_columns,onehotencoder,scaler,device):
         """
@@ -294,6 +299,29 @@ class Autoencoder(nn.Module):
             clean_data = pd.DataFrame(scaler.inverse_transform(clean_data),index=clean_data.index,columns=continous_columns).round(0)
         
         return clean_data
+
+    def anonymize(self,test_df,test_loader,batch_size,device):
+        """
+        @brief Data anonymizing using only the encoder
+        @param test_df: Test set dataFrame
+        @param test_loader: Dataloader object containing test dataset
+        @param batch_size: Anonymizing batch size
+        @param device: can be "cpu" or "cuda"
+        """
+        self.encoder.eval()
+        self.encoder.to(device)
+        anonymize_progress = tqdm(test_loader, desc=f'Anonymize progress', position=0, leave=True)
+
+        anonymized_outputs = torch.empty(0).to(device)
+        with torch.no_grad():
+            for inputs,_ in anonymize_progress:
+                inputs = inputs.to(device)
+                outputs = self.encoder(inputs)
+                anonymized_outputs = torch.cat((anonymized_outputs,outputs),dim=0)
+        
+        anonymized_data = pd.DataFrame(anonymized_outputs.detach().cpu().numpy(),index=test_df.index[:(test_df.shape[0] // batch_size) * batch_size])
+        return anonymized_data
+
 
     def outlier_dectection():
         pass

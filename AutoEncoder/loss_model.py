@@ -1,15 +1,14 @@
 import torch
 import torch.nn as nn
 
-def loss_CEMSE(input, outputs, encoder, scaler, continous_columns=[], categorical_columns=[]):
+def loss_CEMSE(input, outputs, categories, continous_columns=[], categorical_columns=[]):
     """
      @brief Calculates cross entropy loss and mean square error loss of a dataframe correspondingly to continous and categorical columns
      @param input: The input tensor which is a batch of dataframe rows
      @param outputs: The output which is the autoencoded input
      @param continous_columns: A list of continous column names
      @param categorical_columns: A list of categorical column names
-     @param encoder: The encoder used to one-hot encode the categorical input values
-     @param scaler: The scaler used to scale the continous input values
+     @param categories: The categories created by one-hot encoder
      @return The combined CE loss and MSE loss
     """  
     output_categorical = None
@@ -18,15 +17,13 @@ def loss_CEMSE(input, outputs, encoder, scaler, continous_columns=[], categorica
     slice_list = []
     
     if (len(categorical_columns)!=0 and len(continous_columns)!=0):
-        encoded_columns = encoder.categories_
-        column_map = {column: encoded_columns[i] for i, column in enumerate(categorical_columns)} # Map categorical columns with onehot subcolumns
+        column_map = {column: categories[i] for i, column in enumerate(categorical_columns)} # Map categorical columns with onehot subcolumns
         output_categorical = outputs[:,len(continous_columns):]
         output_continous = outputs[:,:len(continous_columns)]
         for i in list(column_map):
             slice_list.append(column_map[i].shape[0])
     elif (len(continous_columns)!=0):
-        encoded_columns = encoder.categories_
-        column_map = {column: encoded_columns[i] for i, column in enumerate(categorical_columns)} # Map categorical columns with onehot subcolumns
+        column_map = {column: categories[i] for i, column in enumerate(categorical_columns)} # Map categorical columns with onehot subcolumns
         output_categorical = outputs
         for i in list(column_map):
             slice_list.append(column_map[i].shape[0])

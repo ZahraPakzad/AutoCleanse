@@ -1,4 +1,5 @@
 import io
+import joblib
 from exasol.bucketfs import (
     Service,
     as_bytes,
@@ -6,53 +7,57 @@ from exasol.bucketfs import (
     as_string,
 )
 
-class BucketFS_client():
-    def __init__(self):
-        """
-         @brief Provide client API to interact with BucketFS
-        """
-        self.url = "http://172.18.0.2:6583"
-        self.cred = {"default":{"username":"w","password":"write"}}
-        self.bucketfs = Service(self.url,self.cred)
-        self.bucket = self.bucketfs["default"]  
+class bucketfs_client():
+    """
+        @brief Provide client API to interact with BucketFS
+    """
+    url = "http://172.18.0.2:6583"
+    cred = {"default":{"username":"w","password":"write"}}
+    bucketfs = Service(url,cred)
+    bucket = bucketfs["default"]  
     
-    def upload(self,file_path,buffer):
+    @classmethod
+    def upload(cls,file_path,buffer):
         """
          @brief Upload file to BucketFS
          @param file_path: Full path and file name in BucketFS
-         @param buffer: BytesIO object to write to BucketFS as bytes
-        """
+         @parm buffer: Buffer object containing data to upload
+        """        
         buffer.seek(0)             
-        self.bucket.upload(file_path, buffer)
+        cls.bucket.upload(file_path, buffer)
 
-    def download(self,file_path):
+    @classmethod
+    def download(cls,file_path):
         """
          @brief Download file to BucketFS
          @param file_path: Full path and file name in BucketFS
         """
-        data = data = io.BytesIO(as_bytes(self.bucket.download(file_path)))
+        data = io.BytesIO(as_bytes(cls.bucket.download(file_path)))
         return data
 
-    def check(self,file_path):
+    @classmethod
+    def check(cls,file_path):
         """
          @brief Check if file is in BucketFS
          @param file_path: Full path and file name in BucketFS
         """
-        for file in self.bucket:
+        for file in cls.bucket:
             if (file == file_path):
                 return True
         return False
 
-    def delete(self,file_path):
+    @classmethod
+    def delete(cls,file_path):
         """
          @brief Delete file in BucketFS
          @param file_path: Full path and file name in BucketFS
         """
-        self.bucket.delete(file_path)
+        cls.bucket.delete(file_path)
 
-    def view(self):
+    @classmethod
+    def view(cls):
         """
          @brief View all files in BucketFS
         """
-        for file in self.bucket:
+        for file in cls.bucket:
             print(file)

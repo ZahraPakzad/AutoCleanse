@@ -29,7 +29,7 @@ class test_preprocessor(unittest.TestCase):
         print("test_dataSplitter: OK")
     
     def test_dataPreprocessor_BucketFS(self):
-        client = BucketFS_client()
+        client = bucketfs_client()
         location = "BucketFS"
         layers = ['test']
 
@@ -90,7 +90,7 @@ class test_preprocessor(unittest.TestCase):
         print("test_dataPreprocessor_local: OK")
 
     def test_dataPreprocessor_con_BucketFS(self):
-        client = BucketFS_client()
+        client = bucketfs_client()
         location="BucketFS"
         layers=['test_con']
 
@@ -141,7 +141,7 @@ class test_preprocessor(unittest.TestCase):
         print("test_dataPreprocessor_con_local: OK")
 
     def test_dataPreprocessor_cat_BucketFS(self):
-        client = BucketFS_client()
+        client = bucketfs_client()
         location="BucketFS"
         layers=['test_cat']
 

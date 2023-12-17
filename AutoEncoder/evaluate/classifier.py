@@ -7,7 +7,7 @@ from collections import Counter
 from exasol.bucketfs import Service
 from tqdm import tqdm
 from AutoEncoder.loss_model import loss_CEMSE
-from AutoEncoder.bucketfs_client import BucketFS_client
+from AutoEncoder.bucketfs_client import bucketfs_client
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.dummy import DummyClassifier
 from sklearn.model_selection import cross_val_score, RepeatedStratifiedKFold
@@ -47,8 +47,7 @@ class ClsNNBase(nn.Module):
         if weight_path is not None:
             if load_method == "BucketFS":
                 # Load weight from BucketFS
-                client = BucketFS_client()
-                weight = client.download(weight_path)
+                weight = bucketfs_client().download(weight_path)
             elif load_method == "local":
                 # Load weight by local file
                 with open(weight_path, 'rb') as file:
@@ -70,8 +69,8 @@ class ClsNNBase(nn.Module):
         x = self.network(x)
         return x
 
-    def train_model(self,num_epochs,batch_size,patience,layers,train_loader,val_loader,onehotencoder,scaler, \
-              continous_columns,categorical_columns,device,save=None):    
+    def train_model(self,num_epochs,batch_size,patience,layers,train_loader,val_loader, \
+                    continous_columns,categorical_columns,device,save=None):    
         best_loss = float('inf')
         best_state_dict = None
         optimizer = self.optimizer
@@ -178,7 +177,7 @@ class ClsNNBase(nn.Module):
             if (save=="BucketFS"):   
                 buffer = io.BytesIO()
                 torch.save(self.state_dict(), buffer)
-                client = BucketFS_client()
+                client = bucketfs_client()
                 client.upload(f'autoencoder/{file_name}', buffer)
             elif (save=="local"):
                 torch.save(self.state_dict(), file_name)
