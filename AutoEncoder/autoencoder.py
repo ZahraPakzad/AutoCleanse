@@ -15,7 +15,7 @@ from torch.optim.lr_scheduler import *
 class Autoencoder(nn.Module):
     
     def __init__(self, layers, batch_norm, dropout_enc=None, dropout_dec=None, l1_strength=0.0, l2_strength=0.0,
-                 learning_rate=1e-3, weight_decay=0, load_method=None, weight_path=None):
+                 learning_rate=1e-3, weight_decay=0):
         """
          @brief Initialize Autoencoder with given layer sizes and dropout. This is the base constructor for Autoencoder. You can override it in your subclass if you want to customize the layers.
          @param layers: List of size of layers to use
@@ -59,19 +59,7 @@ class Autoencoder(nn.Module):
         self.decoder = nn.Sequential(*decoder_layers)
         
         self.optimizer = torch.optim.AdamW(self.parameters(), lr=learning_rate, weight_decay=weight_decay)
-        self.scheduler = StepLR(self.optimizer, step_size=25, gamma=0.1)
-
-        if (load_method is not None):  
-            if (weight_path is None):
-                weight_path = generate_suffix(layers,'autoencoder',load_method)  
-            if (load_method=="bucketfs"):
-                # Load weight from BuckeFS
-                weight = client.download(weight_path)
-            elif(load_method=="local"):
-                # Load weight by local file
-                with open(weight_path, 'rb') as file:
-                    weight = io.BytesIO(file.read())
-            self.load_state_dict(torch.load(weight))
+        self.scheduler = StepLR(self.optimizer, step_size=25, gamma=0.1)     
 
     def add_regularization_hook(self, module, input, output):
         l1_reg = self.l1_strength * F.l1_loss(output, torch.zeros_like(output))
@@ -197,7 +185,7 @@ class Autoencoder(nn.Module):
                 break
             train_progress.close()
         
-    def save(self,name,location):
+    def save(self,location,name=None):
         self.load_state_dict(self.best_state_dict)
         if (name is None):
             layers_str = '_'.join(str(item) for item in self.layers) 
@@ -220,9 +208,9 @@ class Autoencoder(nn.Module):
                 raise RuntimeError(f"Failed saving {name} to local") from e
             print(f'Saved weight to {name}')
 
-    def load(self,name,location):
-        weight = None
-        name = f"autoencoder_{name}.pth"
+    def load(self,location,name=None):
+        weight = None 
+        name = f"autoencoder_{name}.pth"           
         if (location=="bucketfs"):
             try:
                 weight = bucketfs_client().download(f'autoencoder/{name}')

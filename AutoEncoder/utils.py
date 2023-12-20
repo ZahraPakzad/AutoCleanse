@@ -73,7 +73,7 @@ def generate_suffix(layer_sizes,prefix,load_method=None):
     # Convert the list of layer sizes to a list of strings
     layer_sizes_str = [str(size) for size in layer_sizes[1:]]
     
-    if (load_method=="BucketFS"):
+    if (load_method=="bucketfs"):
         autoencoder_name = f'/autoencoder/{prefix}_' + '_'.join(layer_sizes_str) + '.pth'
     elif (load_method=="local"):
         autoencoder_name = f'{prefix}_' + '_'.join(layer_sizes_str) + '.pth'

@@ -95,9 +95,8 @@ wlc = (1,5)
 # layers = string2list(args.layers) 
 # wlc = string2tupple(args.wlc)                           
 autoencoder = Autoencoder(layers=layers,dropout_enc=[(0,0.0)],dropout_dec=[(0,0.1)], batch_norm=True, \
-                        learning_rate=1e-4,weight_decay=1e-5,l1_strength=1e-5,l2_strength=1e-5 \
-                        )
-autoencoder.load("test","bucketfs")
+                          learning_rate=1e-4,weight_decay=1e-5,l1_strength=1e-5,l2_strength=1e-5)
+autoencoder.load("local","test")
 summary(autoencoder.to(device),torch.tensor(X_train.values).float().to(device).shape[1:])
 
 # autoencoder.train_model(
@@ -111,7 +110,7 @@ summary(autoencoder.to(device),torch.tensor(X_train.values).float().to(device).s
 #       categories=categories,
 #       device=device,
 #       wlc=wlc)
-# autoencoder.save("test","local")
+# autoencoder.save("local","test")
 
 # cleaned_data = autoencoder.clean(test_loader=test_loader,
 #                                 test_loader_og=test_loader_og,

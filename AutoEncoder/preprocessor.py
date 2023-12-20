@@ -4,7 +4,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.base import clone
 from AutoEncoder.bucketfs_client import bucketfs_client
 from AutoEncoder.utils import *
-from bucketfs_client import *
 
 class Preprocessor():
   def __init__(self, scaler, encoder):
