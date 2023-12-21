@@ -23,12 +23,13 @@ class ClassifierDummy:
         print('Mean Accuracy: %.3f (%.3f)' % (np.mean(scores), np.std(scores)))         
 
 class ClsNNBase(nn.Module):
-    def __init__(self, layers, l1_strength, l2_strength, batch_norm, dropout, device, load_method=None, weight_path=None,
-                 learning_rate=1e-3, weight_decay=0):
+    def __init__(self, layers, l1_strength, l2_strength, batch_norm, dropout, device, learning_rate=1e-3, weight_decay=0):
         super(ClsNNBase, self).__init__()
         self.num_layers = len(layers)
+        self.layers = layers
         self.l1_strength = l1_strength
         self.l2_strength = l2_strength
+        self.best_state_dict = None
 
         hidden_layers = []
         for i in range(self.num_layers - 1):
@@ -42,17 +43,7 @@ class ClsNNBase(nn.Module):
                         hidden_layers.append(nn.Dropout(drop_chance))
         hidden_layers.append(nn.Linear(layers[-1], 2))
         hidden_layers.append(nn.Sigmoid())
-        self.network = nn.Sequential(*hidden_layers)
-
-        if weight_path is not None:
-            if load_method == "BucketFS":
-                # Load weight from BucketFS
-                weight = bucketfs_client().download(weight_path)
-            elif load_method == "local":
-                # Load weight by local file
-                with open(weight_path, 'rb') as file:
-                    weight = io.BytesIO(file.read())
-            self.load_state_dict(torch.load(weight))
+        self.network = nn.Sequential(*hidden_layers)     
 
         self.optimizer = torch.optim.AdamW(self.parameters(), lr=learning_rate, weight_decay=weight_decay)
         self.scheduler = StepLR(self.optimizer, step_size=4, gamma=0.1)
@@ -70,9 +61,8 @@ class ClsNNBase(nn.Module):
         return x
 
     def train_model(self,num_epochs,batch_size,patience,layers,train_loader,val_loader, \
-                    continous_columns,categorical_columns,device,save=None):    
-        best_loss = float('inf')
-        best_state_dict = None
+                    continous_columns,categorical_columns,device):    
+        best_loss = float('inf')        
         optimizer = self.optimizer
         scheduler = self.scheduler
         counter = 0
@@ -159,7 +149,7 @@ class ClsNNBase(nn.Module):
             # Check if validation loss has improved
             if val_avg_loss < best_loss - 0.001:
                 best_loss = val_avg_loss
-                best_state_dict = self.state_dict()
+                self.best_state_dict = self.state_dict()
                 counter = 0
             else:
                 counter += 1
@@ -169,21 +159,45 @@ class ClsNNBase(nn.Module):
                 break
             # train_progress.close()
 
-        # Save training weight 
-        if (save is not None): 
-            self.load_state_dict(best_state_dict)
-            layers_str = '_'.join(str(item) for item in layers[1:]) #@TODO: file name hack
-            file_name = f'ClsNNBase_{layers_str}.pth'
-            if (save=="BucketFS"):   
-                buffer = io.BytesIO()
-                torch.save(self.state_dict(), buffer)
-                client = bucketfs_client()
-                client.upload(f'autoencoder/{file_name}', buffer)
-            elif (save=="local"):
-                torch.save(self.state_dict(), file_name)
-                print(f'Saved weight to {file_name}')
+    def save(self,location,name=None):
+        self.load_state_dict(self.best_state_dict)
+        if (name is None):
+            layers_str = '_'.join(str(item) for item in layers) #@TODO: file name hack
+            name = f'ClsNNBase_{layers_str}.pth'
         else:
-            pass
+            name = f'ClsNNBase_{name}.pth'
+        if (location=="BucketFS"):   
+            buffer = io.BytesIO()
+            torch.save(self.state_dict(), buffer)
+            try:
+                bucketfs_client().upload(f'autoencoder/{name}', buffer)
+            except Exception as e:
+                raise RuntimeError(f"Failed saving {name} to BucketFS") from e
+            print(f'Saved weight to default/autoencoder/{name}')
+        elif (location=="local"):
+            try:
+                torch.save(self.state_dict(), name)
+            except Exception as e:
+                raise RuntimeError(f"Failed saving {name} to local") from e
+            print(f'Saved weight to {name}')
+
+    def load(self,location,name=None):
+        weight = None
+        name = f'ClsNNBase_{name}.pth'
+        if (location=="bucketfs"):
+            try:
+                weight = bucketfs_client().download(f'autoencoder/{name}')
+            except Exception as e:
+                raise RuntimeError(f"Failed loading {name} from BucketFS") from e
+            print(f'Loaded weight from default/autoencoder/{name}')
+        elif (location=="local"):
+            try:
+                with open(name, 'rb') as file:
+                    weight = io.BytesIO(file.read())
+            except Exception as e:
+                raise RuntimeError(f"Failed loading {name} from local") from e
+            print(f'Loaded weight from {name}')
+        self.load_state_dict(torch.load(weight))
 
     def test(self,test_loader,batch_size,device):
         self.eval()

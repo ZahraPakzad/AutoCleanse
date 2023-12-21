@@ -8,7 +8,6 @@ from AutoEncoder.preprocessor import *
 from AutoEncoder.utils import *
 from AutoEncoder.dataloader import ClfDataset, DataLoader
 from AutoEncoder.evaluate.classifier import *
-from AutoEncoder.preprocessor import dataSplitter,dataPreprocessor
 
 from sklearn.preprocessing import *
 from sklearn.pipeline import make_pipeline
@@ -35,64 +34,46 @@ y = df[target_columns]
 # model = ClassifierDummy()
 # model.compute_scores(X,y)
 
-X_train,X_val,X_test = dataSplitter(input_df=X,
-                                    train_ratio=0.7,
-                                    val_ratio=0.15,
-                                    test_ratio=0.15,
-                                    random_seed=42)
+scaler = MinMaxScaler()
+onehotencoder = OneHotEncoder(sparse=False)
+preprocessor = Preprocessor(scaler,onehotencoder)
+
+X_train,X_val,X_test = preprocessor.split(df=X,
+                                        train_ratio=0.7,
+                                        val_ratio=0.15,
+                                        test_ratio=0.15,
+                                        random_seed=42)
 X_dirty = replace_with_nan(X_test,0,42)
 
-y_train,y_val,y_test = dataSplitter(input_df=y,
-                                    train_ratio=0.7,
-                                    val_ratio=0.15,
-                                    test_ratio=0.15,
-                                    random_seed=42)
-y_dirty = replace_with_nan(y_test,0,42)
+X_train = preprocessor.fit_transform(input_df=X_train,
+                                    continous_columns=continous_columns,
+                                    categorical_columns=categorical_columns)
 
-layers = [150,200,200,100,50]
+X_val = preprocessor.transform(input_df=X_val,    
+                            continous_columns=continous_columns,
+                            categorical_columns=categorical_columns)                          
 
-X_train,scaler,onehotencoder = dataPreprocessor(
-                        input_df=X_train,
-                        is_train=True,             
-                        continous_columns=continous_columns,
-                        categorical_columns=categorical_columns,
-                        load_method="local",
-                        layers=layers)                     
+X_test = preprocessor.transform(input_df=X_test,   
+                                continous_columns=continous_columns,
+                                categorical_columns=categorical_columns)  
 
-X_val,_,_ = dataPreprocessor(
-                        input_df=X_val,    
-                        is_train=False,         
-                        continous_columns=continous_columns,
-                        categorical_columns=categorical_columns,
-                        load_method="local",
-                        layers=layers)                               
-
-X_test,_,_ = dataPreprocessor(
-                        input_df=X_test,   
-                        is_train=False,
-                        continous_columns=continous_columns,
-                        categorical_columns=categorical_columns,
-                        load_method="local",
-                        layers=layers)     
-
-X_dirty,_,_ = dataPreprocessor(
-                        input_df=X_dirty,   
-                        is_train=False,
-                        continous_columns=continous_columns,
-                        categorical_columns=categorical_columns,
-                        load_method="local",
-                        layers=layers)  
+X_dirty = preprocessor.transform(input_df=X_dirty,   
+                                continous_columns=continous_columns,
+                                categorical_columns=categorical_columns) 
 
 df_cleaned = pd.read_csv("/home/tung/development/AutoEncoder/df_cleaned.csv")
 X_cleaned = df_cleaned[continous_columns+categorical_columns]
-X_cleaned,_,_ = dataPreprocessor(
-                        input_df=X_cleaned,   
-                        is_train=False,
-                        continous_columns=continous_columns,
-                        categorical_columns=categorical_columns,
-                        load_method="local",
-                        layers=layers)
-                        
+X_cleaned = preprocessor.transform(input_df=X_cleaned,   
+                                    continous_columns=continous_columns,
+                                    categorical_columns=categorical_columns) 
+
+y_train,y_val,y_test = preprocessor.split(df=y,
+                                        train_ratio=0.7,
+                                        val_ratio=0.15,
+                                        test_ratio=0.15,
+                                        random_seed=42)
+y_dirty = replace_with_nan(y_test,0,42)
+                      
 y_encoder = OneHotEncoder(sparse=False)
 y_train = pd.DataFrame(y_encoder.fit_transform(y_train),columns=y_encoder.get_feature_names_out(target_columns),index=y_train.index)
 y_val = pd.DataFrame(y_encoder.transform(y_val),columns=y_encoder.get_feature_names_out(target_columns),index=y_val.index)
@@ -112,8 +93,7 @@ def custom_collate_fn(batch):
     if torch.is_tensor(batch[0][1]):  
         tensor_targets = torch.stack([item[1] for item in batch])
     else:
-        tensor_targets = torch.tensor([item[1] for item in batch], dtype=torch.float32)
-    
+        tensor_targets = torch.tensor([item[1] for item in batch], dtype=torch.float32) 
     indices = [item[2] for item in batch]
     return tensor_data, tensor_targets, indices
 
@@ -124,12 +104,11 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, dro
 dirty_loader = DataLoader(dirty_dataset, batch_size=batch_size, shuffle=False, drop_last=True, collate_fn=custom_collate_fn)
 cleaned_loader = DataLoader(cleaned_dataset, batch_size=batch_size, shuffle=False, drop_last=True, collate_fn=custom_collate_fn)                        
 
-layers = [X_train.shape[1]]+layers
+layers = [X_train.shape[1],150,200,200,100,50]
         
 model = ClsNNBase(layers=layers,dropout=[(0,0.5),(1,0.5),(2,0.5)], batch_norm=True, device=device, \
-                  learning_rate=0.025,weight_decay=1e-5,l1_strength=1e-3,l2_strength=1e-3, \
-                  load_method="local"
-                  ,weight_path="/home/tung/development/AutoEncoder/ClsNNBase_150_200_200_100_50.pth")
+                  learning_rate=0.025,weight_decay=1e-5,l1_strength=1e-3,l2_strength=1e-3)
+model.load("local","test")
 summary(model.to(device),torch.tensor(X_train.values).float().to(device).shape[1:])
 
 # model.train_model(train_loader=train_loader,
@@ -139,11 +118,9 @@ summary(model.to(device),torch.tensor(X_train.values).float().to(device).shape[1
 #                 layers=layers,
 #                 patience=2,
 #                 continous_columns=continous_columns, 
-#                 categorical_columns=categorical_columns[:-1], # exclude target columns
-#                 onehotencoder=onehotencoder, 
-#                 scaler=scaler,
-#                 device=device,
-#                 save="local")
+#                 categorical_columns=categorical_columns, 
+#                 device=device)
+# model.save("local","test")
 
 model.test(test_loader=test_loader,batch_size=batch_size,device=device)
 
