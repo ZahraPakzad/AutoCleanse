@@ -2,8 +2,8 @@ import pandas as pd
 import io
 from sklearn.model_selection import train_test_split
 from sklearn.base import clone
-from AutoEncoder.bucketfs_client import bucketfs_client
-from AutoEncoder.utils import *
+from AutoCleanse.bucketfs_client import bucketfs_client
+from AutoCleanse.utils import *
 
 class Preprocessor():
   def __init__(self, scaler, encoder):

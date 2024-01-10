@@ -11,13 +11,13 @@ from tqdm import tqdm
 from tabulate import tabulate
 from sklearn.preprocessing import *
 
-from AutoEncoder.utils import *
-from AutoEncoder.dataloader import PlainDataset, DataLoader
-from AutoEncoder.autoencoder import *
-from AutoEncoder.loss_model import loss_CEMSE
-from AutoEncoder.preprocessor import Preprocessor
-from AutoEncoder.anonymize import anonymize
-from AutoEncoder.bucketfs_client import *
+from AutoCleanse.utils import *
+from AutoCleanse.dataloader import PlainDataset, DataLoader
+from AutoCleanse.autoencoder import *
+from AutoCleanse.loss_model import loss_CEMSE
+from AutoCleanse.preprocessor import Preprocessor
+from AutoCleanse.anonymize import anonymize
+from AutoCleanse.bucketfs_client import *
 
 start_time = time.time()
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")

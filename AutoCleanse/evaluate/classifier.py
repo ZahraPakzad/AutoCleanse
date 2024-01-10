@@ -2,12 +2,12 @@ import os
 import io
 import torch
 import torch.nn as nn
-from AutoEncoder.utils import *
+from AutoCleanse.utils import *
 from collections import Counter
 from exasol.bucketfs import Service
 from tqdm import tqdm
-from AutoEncoder.loss_model import loss_CEMSE
-from AutoEncoder.bucketfs_client import bucketfs_client
+from AutoCleanse.loss_model import loss_CEMSE
+from AutoCleanse.bucketfs_client import bucketfs_client
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.dummy import DummyClassifier
 from sklearn.model_selection import cross_val_score, RepeatedStratifiedKFold

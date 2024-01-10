@@ -1,14 +1,14 @@
 from setuptools import setup
 
 setup(
-    name="AutoEncoder",
-    packages=["AutoEncoder"],
+    name="AutoCleanse",
+    packages=["AutoCleanse"],
     version="1.0.2",
     author="Tung Tran",
-    description="Data cleaning and anonymization using autoencoder",
+    description="A tool for data cleaning and anonymization using autoencoder",
     long_description=open("README.md", "r", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/JohanObluda/AutoEncoder",
+    url="https://github.com/tungsontran/AutoCleanse",
     license="MIT",
     include_package_data=True,
     install_requires=[],

@@ -4,10 +4,10 @@ import numpy as np
 import random
 from torchsummary import summary
 
-from AutoEncoder.preprocessor import *
-from AutoEncoder.utils import *
-from AutoEncoder.dataloader import ClfDataset, DataLoader
-from AutoEncoder.evaluate.classifier import *
+from AutoCleanse.preprocessor import *
+from AutoCleanse.utils import *
+from AutoCleanse.dataloader import ClfDataset, DataLoader
+from AutoCleanse.evaluate.classifier import *
 
 from sklearn.preprocessing import *
 from sklearn.pipeline import make_pipeline

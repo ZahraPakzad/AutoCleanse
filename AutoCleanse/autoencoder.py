@@ -4,9 +4,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F 
 
-from AutoEncoder.bucketfs_client import bucketfs_client
-from AutoEncoder.utils import *
-from AutoEncoder.loss_model import loss_CEMSE
+from AutoCleanse.bucketfs_client import bucketfs_client
+from AutoCleanse.utils import *
+from AutoCleanse.loss_model import loss_CEMSE
 
 from exasol.bucketfs import Service
 from tqdm import tqdm
