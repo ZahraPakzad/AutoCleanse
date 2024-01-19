@@ -1,5 +1,7 @@
 import pandas as pd
 import io
+import joblib
+import time
 from sklearn.model_selection import train_test_split
 from sklearn.base import clone
 from AutoCleanse.bucketfs_client import bucketfs_client
@@ -29,14 +31,14 @@ class Preprocessor():
       df_val, df_test = train_test_split(temp, test_size=test_size, random_state=random_seed)
       return df_train,df_val,df_test
 
-  def fit_transform(self,input_df,continous_columns,categorical_columns):
+  def fit_transform(self,input_df,continous_columns=None,categorical_columns=None):
     # Preprocess continous columns
-    if (len(continous_columns)!=0):      
+    if (continous_columns is not None):      
       input_df_scaled = self.scaler.fit_transform(input_df[continous_columns])
       input_df[continous_columns] = input_df_scaled
         
     # Preprocess categorical columns
-    if (len(categorical_columns)!=0):
+    if (categorical_columns is not None):
       input_df_encoded = self.encoder.fit_transform(input_df[categorical_columns])  
       input_df_encoded_part = pd.DataFrame(input_df_encoded, columns=self.encoder.get_feature_names_out(categorical_columns),index=input_df.index)
       input_df = pd.concat([input_df,input_df_encoded_part],axis=1)
@@ -48,14 +50,14 @@ class Preprocessor():
 
     return input_df
 
-  def transform(self,input_df,continous_columns,categorical_columns):
+  def transform(self,input_df,continous_columns=None,categorical_columns=None):
     # Preprocess continous columns
-    if (len(continous_columns)!=0):      
+    if (continous_columns is not None):      
       input_df_scaled = self.scaler.transform(input_df[continous_columns])
       input_df[continous_columns] = input_df_scaled
         
     # Preprocess categorical columns
-    if (len(categorical_columns)!=0):
+    if (categorical_columns is not None):
       input_df_encoded = self.encoder.transform(input_df[categorical_columns])
       input_df_encoded_part = pd.DataFrame(input_df_encoded, columns=self.encoder.get_feature_names_out(categorical_columns),index=input_df.index)
       input_df = pd.concat([input_df,input_df_encoded_part],axis=1)
@@ -76,20 +78,31 @@ class Preprocessor():
     elif (location=="bucketfs"):
       buffer = io.BytesIO()
       joblib.dump(self,buffer)
-      try:
-        bucketfs_client().upload(f'preprocessor_{name}.pkl',buffer)
-      except Exception as e:
-        raise RuntimeError(f"Failed saving preprocessor_{name}.pkl to BucketFS") from e
+      max_retries = 3
+      delay = 3
+      for attempt in range(max_retries):
+        try:
+          bucketfs_client().upload(f'preprocessor/preprocessor_{name}.pkl',buffer)
+          break
+        except Exception as e:
+          print(f"Upload attempt {attempt + 1} failed. Retrying...\n")
+          if (attempt == max_retries - 1):
+            raise RuntimeError(f"Failed saving preprocessor_{name}.pkl to BucketFS") from e
+          time.sleep(delay)
 
   def load(self,name,location):
     if (location=="local"):
       try:
-        self = joblib.load(f'preprocessor_{name}.pkl')
+        loaded_preprocessor = joblib.load(f'preprocessor_{name}.pkl')
+        self.scaler = loaded_preprocessor.scaler
+        self.encoder = loaded_preprocessor.encoder
       except Exception as e:
         raise RuntimeError(f"Failed loading preprocessor_{name}.pkl from local") from e
     elif (location=="bucketfs"):
-      data = bucketfs_client().download(f'preprocessor_{name}.pkl')
+      data = bucketfs_client().download(f'preprocessor/preprocessor_{name}.pkl')
       try:
-        self = joblib.load(data)
+        loaded_preprocessor = joblib.load(data)
+        self.scaler = loaded_preprocessor.scaler
+        self.encoder = loaded_preprocessor.encoder
       except Exception as e:
         raise RuntimeError(f"Failed loading preprocessor_{name}.pkl from BucketFS") from e
