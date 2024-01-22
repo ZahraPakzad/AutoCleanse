@@ -5,9 +5,7 @@ setuptools==68.2.2
 datasets==2.16.1
 transformers==4.37.0
 exasol-bucketfs==0.8.0
-pytorch==2.1.1
-torch-cuda==12.1
-torchmetrics==1.2.1
+torch
 torchsummary==1.5.1
 cudatoolkit==11.8.0
 scikit-learn==1.0.2
