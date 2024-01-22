@@ -51,10 +51,14 @@ X_dirty = replace_with_nan(X_test,0,42)
 X_train = preprocessor.fit_transform(input_df=X_train,
                                     continous_columns=continous_columns,
                                     categorical_columns=categorical_columns)
-
+# preprocessor.save("test","local")
+# preprocessor.save("test","bucketfs")
+# preprocessor = Preprocessor(scaler=MinMaxScaler(),encoder=OneHotEncoder(sparse=False))
+# preprocessor2.load("test","local")
+# preprocessor2.load("test","bucketfs")
 X_val = preprocessor.transform(input_df=X_val,    
-                            continous_columns=continous_columns,
-                            categorical_columns=categorical_columns)                          
+                               continous_columns=continous_columns,
+                               categorical_columns=categorical_columns)                          
 
 X_test = preprocessor.transform(input_df=X_test,   
                                 continous_columns=continous_columns,
@@ -62,12 +66,7 @@ X_test = preprocessor.transform(input_df=X_test,
 
 X_dirty = preprocessor.transform(input_df=X_dirty,   
                                 continous_columns=continous_columns,
-                                categorical_columns=categorical_columns) 
-
-# preprocessor.save("test","local")
-# preprocessor.save("test","bucketfs")
-# preprocessor.load("test","local")
-# preprocessor.load("test","bucketfs")
+                                categorical_columns=categorical_columns)
 
 categories = preprocessor.encoder.categories_
 
@@ -75,7 +74,7 @@ categories = preprocessor.encoder.categories_
 train_dataset = PlainDataset(X_train)
 val_dataset = PlainDataset(X_val)
 test_dataset = PlainDataset(X_test)
-dity_dataset = PlainDataset(X_dirty)
+dirty_dataset = PlainDataset(X_dirty)
 
 def custom_collate_fn(batch):
     tensor_data = torch.stack([item[0] for item in batch])
@@ -86,8 +85,8 @@ torch.manual_seed(42) #@TODO: random seed
 batch_size = 64
 train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, drop_last=True,collate_fn=custom_collate_fn)
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=True, collate_fn=custom_collate_fn)
-test_loader = DataLoader(dity_dataset, batch_size=batch_size, shuffle=False, drop_last=True, collate_fn=custom_collate_fn)
-test_loader_og = DataLoader(dity_dataset, batch_size=batch_size, shuffle=False, drop_last=True, collate_fn=custom_collate_fn)
+test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, drop_last=True, collate_fn=custom_collate_fn)
+dirty_loader = DataLoader(dirty_dataset, batch_size=batch_size, shuffle=False, drop_last=True, collate_fn=custom_collate_fn)
 
 # Declaring model
 layers = [X_train.shape[1],1024,128]   
@@ -96,7 +95,7 @@ wlc = (1,5)
 # wlc = string2tupple(args.wlc)                           
 autoencoder = Autoencoder(layers=layers,dropout_enc=[(0,0.0)],dropout_dec=[(0,0.1)], batch_norm=True, \
                           learning_rate=1e-4,weight_decay=1e-5,l1_strength=1e-5,l2_strength=1e-5)
-autoencoder.load("local","test")
+autoencoder.load("local","main")
 summary(autoencoder.to(device),torch.tensor(X_train.values).float().to(device).shape[1:])
 
 # autoencoder.train_model(
@@ -110,29 +109,29 @@ summary(autoencoder.to(device),torch.tensor(X_train.values).float().to(device).s
 #       categories=categories,
 #       device=device,
 #       wlc=wlc)
-# autoencoder.save("local","test")
+# autoencoder.save("local","main")
 
-# cleaned_data = autoencoder.clean(test_loader=test_loader,
-#                                 test_loader_og=test_loader_og,
-#                                 test_df=X_dirty,
-#                                 batch_size=batch_size,
-#                                 continous_columns=continous_columns, 
-#                                 categorical_columns=categorical_columns, 
-#                                 og_columns=og_columns,
-#                                 onehotencoder=preprocessor.encoder, 
-#                                 scaler=preprocessor.scaler,
-#                                 device=device)                    
+cleaned_data = autoencoder.clean(dirty_loader=dirty_loader,
+                                test_loader=test_loader,
+                                df=X_dirty,
+                                batch_size=batch_size,
+                                continous_columns=continous_columns, 
+                                categorical_columns=categorical_columns, 
+                                og_columns=og_columns,
+                                onehotencoder=preprocessor.encoder, 
+                                scaler=preprocessor.scaler,
+                                device=device)                    
 
-# anonymized_data = autoencoder.anonymize(test_df=X_test,
-#                                         test_loader=test_loader,
+# anonymized_data = autoencoder.anonymize(df=X_test,
+#                                         data_loader=test_loader,
 #                                         batch_size=batch_size,
 #                                         device=device) 
 
 # print("\n")
-# print(tabulate(df.loc[[28296,28217,8054,4223,22723],og_columns],headers=og_columns,tablefmt="simple",maxcolwidths=[None, 4]))
-# print("\n")
-# print(tabulate(cleaned_data.loc[[28296,28217,8054,4223,22723]],headers=cleaned_data.columns.to_list(),tablefmt="simple",maxcolwidths=[None, 4]))
-# print("\n")
+print(tabulate(df.loc[[28296,28217,8054,4223,22723],og_columns],headers=og_columns,tablefmt="simple",maxcolwidths=[None, 4]))
+print("\n")
+print(tabulate(cleaned_data.loc[[28296,28217,8054,4223,22723]],headers=cleaned_data.columns.to_list(),tablefmt="simple",maxcolwidths=[None, 4]))
+print("\n")
 # print(tabulate(anonymized_data.round(decimals=4).iloc[:5,:32],headers=anonymized_data.columns.to_list(),tablefmt="simple",maxcolwidths=[None, 6]))
 # print("\n")
 end_time = time.time()
