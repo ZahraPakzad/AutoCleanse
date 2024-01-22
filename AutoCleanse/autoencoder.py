@@ -76,17 +76,24 @@ class Autoencoder(nn.Module):
     def train_model(self,num_epochs,batch_size,patience,train_loader,val_loader,categories, \
                     device,continous_columns,categorical_columns,wlc=(1,1)):
         """
-        @brief Autoencoder trainer
-        @param num_epochs: Number of training epochs 
-        @param batch_size: Traning batch size
-        @param patience: Number of epochs to wait before stopping the training process if validation loss does not improve
-        @param train_loader: Dataloader object containing train dataset
-        @param val_loader: Dataloader object containing validation dataset
-        @param continous_columns: A list of continous column names
-        @param categorical columns: A list of categorical column names
-        @param categories: The categories created by one-hot encoder
-        @param device: Can be "cpu" or "cuda"
+        Train the model using the specified parameters and data loaders.
+
+        Args:
+            num_epochs (int): The number of epochs for training.
+            batch_size (int): The batch size for the data loaders.
+            patience (int): The number of epochs to wait for improvement before stopping training.
+            train_loader (DataLoader): The data loader for the training set.
+            val_loader (DataLoader): The data loader for the validation set.
+            categories (list): The list of category names.
+            device (str): The device to use for training (e.g., 'cpu', 'cuda').
+            continous_columns (list): The list of names of the continuous columns.
+            categorical_columns (list): The list of names of the categorical columns.
+            wlc (tuple, optional): The weighted loss coefficients for CE and MSE losses. Defaults to (1, 1).
+
+        Returns:
+            None
         """
+        
         self.wlc =  wlc
         best_loss = float('inf')
         self.to(device)
@@ -226,57 +233,83 @@ class Autoencoder(nn.Module):
             print(f'Loaded weight from {name}')
         self.load_state_dict(torch.load(weight))
 
-    def clean(self,test_df,test_loader,test_loader_og,batch_size,continous_columns,categorical_columns,og_columns,onehotencoder,scaler,device):
+    def clean(self,dirty_loader,df,batch_size,onehotencoder,scaler,device,\
+              og_columns,continous_columns=None,categorical_columns=None,test_loader=None):
         """
-        @brief Data cleaning using the whole autoencoder
-        @param test_df: Test set dataframe
-        @param test_loader: Dataloader object containing test dataset
-        @param batch_size: Cleaning batch size 
-        @param continous_columns: A list of continous column names
-        @param categorical_columns: A list of categorical column names
-        @param og_columns: A list of original columns order 
-        @param onehotencoder: Onehot encoder object
-        @param scaler: Scaler object
-        @param device: can be "cpu" or "cuda"
+        Clean the test data using the trained model and return the cleaned data.
+
+        Parameters:
+            df (DataFrame): The dataframe to be cleaned.
+            dirty_loader (DataLoader): The DataLoader for the dirty data. Dirty data is data that actually need to be cleaned.
+            test_loader (DataLoader): The DataLoader for the test data. Test data is the original clean version of dirty data. 
+                                      This is only used to test the performance of the model agaisnt artificial dirty data.
+            batch_size (int): The batch size for processing the data.
+            onehotencoder (OneHotEncoder): The one-hot encoder for categorical columns.
+            scaler (Scaler): The scaler for continuous columns.
+            device (str): The device to be used for processing (e.g., 'cpu' or 'cuda').
+            og_columns (List): The original columns of the test dataset.
+            continous_columns (List, optional): The list of continuous columns. Defaults to None.
+            categorical_columns (List, optional): The list of categorical columns. Defaults to None.
+
+        Returns:
+            clean_data (DataFrame): The cleaned test data.
         """
+        
         self.eval()
         self.to(device)
-        clean_progress = tqdm(zip(test_loader,test_loader_og), desc=f'Clean progress', total=len(test_loader), position=0, leave=True)
         clean_outputs = torch.empty(0, device=device)
-        MAE = torch.empty(0, device=device)
-        MSE = torch.empty(0, device=device)
-        with torch.no_grad():
-            for batch_test,batch_test_og in clean_progress:
-                inputs,_ = batch_test
-                inputs_og,_ = batch_test_og
-                inputs = inputs.to(device)
-                inputs_og = inputs_og.to(device)
+        if (test_loader is not None):
+            clean_progress = tqdm(zip(dirty_loader,test_loader), desc=f'Clean progress', total=len(dirty_loader), position=0, leave=True)
+            MAE = torch.empty(0, device=device)
+            MSE = torch.empty(0, device=device)
+            with torch.no_grad():
+                for batch_dirty,batch_test in clean_progress:
+                    inputs_dirty,_ = batch_dirty
+                    inputs_test,_ = batch_test
+                    inputs_dirty = inputs_dirty.to(device)
+                    inputs_test = inputs_test.to(device)
 
-                outputs = self(inputs)
-                outputs_final = torch.empty(0, device=device)
-                if (len(continous_columns)!=0 and len(categorical_columns)!=0):
-                    outputs_con = outputs[:,:len(continous_columns)]
-                    outputs_cat = outputs[:,len(continous_columns):]
-                    outputs_cat = argmax(outputs_cat, onehotencoder, continous_columns, categorical_columns, device)
-                    outputs_final = torch.cat((outputs_con,outputs_cat),dim=1)
-                elif (len(continous_columns)==0):                
-                    outputs_final = argmax(outputs, onehotencoder, continous_columns, categorical_columns, device)
-                elif (len(categorical_columns)==0):
-                    outputs_final = outputs
+                    outputs = self(inputs_dirty)
+                    outputs_final = torch.empty(0, device=device)                
+                    if (continous_columns is not None and categorical_columns is not None):
+                        outputs_con = outputs[:,:len(continous_columns)]
+                        outputs_cat = outputs[:,len(continous_columns):]
+                        outputs_cat = argmax(outputs_cat, onehotencoder, continous_columns, categorical_columns, device)
+                        outputs_final = torch.cat((outputs_con,outputs_cat),dim=1)
+                    elif (continous_columns is None):                
+                        outputs_final = argmax(outputs, onehotencoder, continous_columns, categorical_columns, device)
+                    elif (categorical_columns is None):
+                        outputs_final = outputs
 
-                clean_outputs = torch.cat((clean_outputs,outputs_final),dim=0)
+                    clean_outputs = torch.cat((clean_outputs,outputs_final),dim=0)
 
-                MAEloss = torch.unsqueeze(F.l1_loss(outputs_final,inputs_og),dim=0)
-                MSEloss = torch.unsqueeze(F.mse_loss(outputs_final,inputs_og),dim=0)
+                    MAEloss = torch.unsqueeze(F.l1_loss(outputs_final,inputs_test),dim=0)
+                    MSEloss = torch.unsqueeze(F.mse_loss(outputs_final,inputs_test),dim=0)
 
-                MAE = torch.cat((MAE,MAEloss),dim=0)
-                MSE = torch.cat((MSE,MSEloss),dim=0)
-        MAEavg = torch.mean(MAE)
-        MSEavg = torch.mean(MSE)
-        print(f'\nMAE: {MAEavg:.8f}')
-        print(f'\nMSE: {MSEavg:.8f}')
+                    MAE = torch.cat((MAE,MAEloss),dim=0)
+                    MSE = torch.cat((MSE,MSEloss),dim=0)
+            MAEavg = torch.mean(MAE)
+            MSEavg = torch.mean(MSE)
+            print(f'\nMAE: {MAEavg:.8f}')
+            print(f'\nMSE: {MSEavg:.8f}')
+        else:
+            clean_progress = tqdm(dirty_loader, desc=f'Clean progress', total=len(dirty_loader), position=0, leave=True)            
+            with torch.no_grad():
+                for inputs,_ in clean_progress:
+                    inputs = inputs.to(device)
+                    outputs = self(inputs)
+                    if (continous_columns is not None and categorical_columns is not None):
+                        outputs_con = outputs[:,:len(continous_columns)]
+                        outputs_cat = outputs[:,len(continous_columns):]
+                        outputs_cat = argmax(outputs_cat, onehotencoder, continous_columns, categorical_columns, device)
+                        outputs_final = torch.cat((outputs_con,outputs_cat),dim=1)
+                    elif (continous_columns is None):                
+                        outputs_final = argmax(outputs, onehotencoder, continous_columns, categorical_columns, device)
+                    elif (categorical_columns is None):
+                        outputs_final = outputs
+                    clean_outputs = torch.cat((clean_outputs,outputs_final),dim=0)
 
-        clean_data = pd.DataFrame(clean_outputs.detach().cpu().numpy(),columns=test_df.columns,index=test_df.index[:(test_df.shape[0] // batch_size) * batch_size])
+        clean_data = pd.DataFrame(clean_outputs.detach().cpu().numpy(),columns=df.columns,index=df.index[:(df.shape[0] // batch_size) * batch_size])
         if (len(continous_columns)!=0 and len(categorical_columns)!=0):
             decoded_cat_cols = pd.DataFrame(onehotencoder.inverse_transform(clean_data.iloc[:,len(continous_columns):]),index=clean_data.index,columns=categorical_columns)
             decoded_con_cols = pd.DataFrame(scaler.inverse_transform(clean_data.iloc[:,:len(continous_columns)]),index=clean_data.index,columns=continous_columns).round(0)
@@ -288,17 +321,23 @@ class Autoencoder(nn.Module):
         
         return clean_data
 
-    def anonymize(self,test_df,test_loader,batch_size,device):
+    def anonymize(self,df,data_loader,batch_size,device):
         """
-        @brief Data anonymizing using only the encoder
-        @param test_df: Test set dataFrame
-        @param test_loader: Dataloader object containing test dataset
-        @param batch_size: Anonymizing batch size
-        @param device: can be "cpu" or "cuda"
+        Anonymizes input data using the encoder model and returns the anonymized data as a DataFrame.
+
+        Args:
+            test_df (DataFrame): The input test data as a DataFrame.
+            test_loader (DataLoader): The data loader for the test data.
+            batch_size (int): The batch size for processing the data.
+            device (str): The device to be used for processing.
+
+        Returns:
+            DataFrame: The anonymized data as a DataFrame.
         """
+        
         self.encoder.eval()
         self.encoder.to(device)
-        anonymize_progress = tqdm(test_loader, desc=f'Anonymize progress', position=0, leave=True)
+        anonymize_progress = tqdm(data_loader, desc=f'Anonymize progress', position=0, leave=True)
 
         anonymized_outputs = torch.empty(0).to(device)
         with torch.no_grad():
@@ -307,7 +346,7 @@ class Autoencoder(nn.Module):
                 outputs = self.encoder(inputs)
                 anonymized_outputs = torch.cat((anonymized_outputs,outputs),dim=0)
         
-        anonymized_data = pd.DataFrame(anonymized_outputs.detach().cpu().numpy(),index=test_df.index[:(test_df.shape[0] // batch_size) * batch_size])
+        anonymized_data = pd.DataFrame(anonymized_outputs.detach().cpu().numpy(),index=df.index[:(df.shape[0] // batch_size) * batch_size])
         return anonymized_data
 
 
