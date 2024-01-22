@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name="AutoCleanse",
     packages=["AutoCleanse"],
-    version="1.0.2",
+    version="1.0.3",
     author="Tung Tran",
     description="A tool for data cleaning and anonymization using autoencoder",
     long_description=open("README.md", "r", encoding="utf-8").read(),

@@ -1,17 +1,22 @@
 Metadata-Version: 2.1
-Name: AutoEncoder
-Version: 0.5.6
-Summary: Data cleaning and anonymization using autoencoder
-Home-page: https://github.com/JohanObluda/AutoEncoder
+Name: AutoCleanse
+Version: 1.0.2
+Summary: A tool for data cleaning and anonymization using autoencoder
+Home-page: https://github.com/tungsontran/AutoCleanse
 Author: Tung Tran
 License: MIT
-Platform: UNKNOWN
 Classifier: Programming Language :: Python :: 3
 Classifier: License :: OSI Approved :: MIT License
 Classifier: Operating System :: OS Independent
 Requires-Python: >=3.8
 Description-Content-Type: text/markdown
 
-# AutoEncoder
+# AutoCleanse
 
+An autoencoder-based tool for processing and augmentating tabular data of mixed numerical and categorical data type, including:
+- Data cleaning and imputation
+- Data anonymization
+- Customizable weighted loss for 
+- Outlier detection 
+- Test suite
 
