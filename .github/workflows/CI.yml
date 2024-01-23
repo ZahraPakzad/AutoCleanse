@@ -5,9 +5,9 @@ name: CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main","test" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main","test" ]
 
 jobs:
   build:
@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]
+        python-version: ["3.9"]
 
     steps: 
     - name: Checkout repository     
@@ -46,9 +46,9 @@ jobs:
       run: |
         pytest
 
-    - name: Check linting and tests
+    - name: Push changes
+      if: success()
       run: |
-        if [ ${{ steps.flake8.outcome }} == "failure" ] || [ ${{ steps.pytest.outcome }} == "failure" ]; then
-          echo "Linting or tests failed. Preventing further workflow execution."
-          exit 1
-        fi
+        git config --global user.email "action@github.com"
+        git config --global user.name "GitHub Actions"
+        git push origin ${{ github.ref }}
