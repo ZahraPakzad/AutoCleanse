@@ -2,15 +2,14 @@ import io
 import os
 import torch
 import torch.nn as nn
-import torch.nn.functional as F 
+import torch.nn.functional as F
 
+from tqdm import tqdm
+from torch.optim.lr_scheduler import *
 from AutoCleanse.bucketfs_client import bucketfs_client
 from AutoCleanse.utils import *
 from AutoCleanse.loss_model import loss_CEMSE
 
-from exasol.bucketfs import Service
-from tqdm import tqdm
-from torch.optim.lr_scheduler import *
 
 class Autoencoder(nn.Module):
     
