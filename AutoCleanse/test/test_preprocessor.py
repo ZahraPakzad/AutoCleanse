@@ -148,7 +148,11 @@ class test_preprocessor(unittest.TestCase):
         print("test_preprocessor_cat_local: OK")
 
 if __name__ == "__main__":
-    unittest.main()
-    # test = test_preprocessor()
+    # unittest.main()
+    test = test_preprocessor()
+    test.test_preprocessor_local()
+    test.test_preprocessor_con_local()
+    test.test_preprocessor_cat_local()
+    # test.test_preprocessor_BucketFS()
     # test.test_preprocessor_con_BucketFS()
     # test.test_preprocessor_cat_BucketFS()

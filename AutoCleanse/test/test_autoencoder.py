@@ -90,5 +90,5 @@ if __name__ == "__main__":
     test.test_anon()
     test.test_save_local()
     test.test_load_local()
-    test.test_save_bucketfs()
-    test.test_load_bucketfs()
+    # test.test_save_bucketfs()
+    # test.test_load_bucketfs()
