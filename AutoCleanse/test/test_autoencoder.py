@@ -42,6 +42,7 @@ class test_autoencoder(unittest.TestCase):
         self.autoencoder = Autoencoder(layers=[self.X_test.shape[1],50,20,2],dropout_enc=[(0,0.5)],dropout_dec=[(0,0.5)],batch_norm=False,\
                                        learning_rate=1e-3,weight_decay=1e-5,l1_strength=1e-5,l2_strength=1e-5)                                    
 
+    @pytest.mark.run(order=1)
     def test_train(self):        
         self.autoencoder.train_model(patience=10,
                                     num_epochs=1,
@@ -53,6 +54,7 @@ class test_autoencoder(unittest.TestCase):
                                     categorical_columns=['Categorical'], 
                                     device=self.device)
 
+    @pytest.mark.run(order=2)
     def test_clean(self):
         cleaned_data = self.autoencoder.clean(dirty_loader=self.test_loader,
                                               df=self.X_test,
@@ -64,21 +66,28 @@ class test_autoencoder(unittest.TestCase):
                                               onehotencoder=self.preprocessor.encoder,
                                               device=self.device) 
 
+    @pytest.mark.run(order=3)
     def test_anon(self):
         anonymized_data = self.autoencoder.anonymize(df=self.X_test,
                                                      data_loader=self.test_loader,
                                                      batch_size=1,
                                                      device=self.device)                             
 
+    @pytest.mark.run(order=4)
     def test_save_local(self):        
         self.autoencoder.save("local","test")
 
+    @pytest.mark.run(order=6)
+    @pytest.mark.skip
     def test_save_bucketfs(self):
         self.autoencoder.save("bucketfs","test")
 
+    @pytest.mark.run(order=5)
     def test_load_local(self):
         self.autoencoder.load("local","test")
 
+    @pytest.mark.run(order=7)
+    @pytest.mark.skip
     def test_load_bucketfs(self):
         self.autoencoder.load("bucketfs","test")
 
@@ -90,5 +99,5 @@ if __name__ == "__main__":
     test.test_anon()
     test.test_save_local()
     test.test_load_local()
-    # test.test_save_bucketfs()
-    # test.test_load_bucketfs()
+    test.test_save_bucketfs()
+    test.test_load_bucketfs()

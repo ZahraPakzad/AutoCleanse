@@ -16,6 +16,7 @@ class test_preprocessor(unittest.TestCase):
         self.df = pd.DataFrame(data)
         self.preprocessor = Preprocessor(scaler=MinMaxScaler(),encoder=OneHotEncoder(sparse=False))
 
+    @pytest.mark.run(order=1)
     def test_split(self):
         # Test nominal output value
         _,_,test1 = self.preprocessor.split(self.df,0.8,0.1,0.1,42)
@@ -29,6 +30,8 @@ class test_preprocessor(unittest.TestCase):
 
         print("test_dataSplitter: OK")
     
+    @pytest.mark.run(order=2)
+    @pytest.mark.skip
     def test_preprocessor_BucketFS(self):
 
         # Test save 
@@ -50,6 +53,7 @@ class test_preprocessor(unittest.TestCase):
 
         print("test_preprocessor_BucketFS: OK")                                           
       
+    @pytest.mark.run(order=3)
     def test_preprocessor_local(self):
 
         # Test save 
@@ -71,6 +75,8 @@ class test_preprocessor(unittest.TestCase):
 
         print("test_preprocessor_local: OK")
 
+    @pytest.mark.run(order=4)
+    @pytest.mark.skip
     def test_preprocessor_con_BucketFS(self):
 
         # Test save 
@@ -90,6 +96,7 @@ class test_preprocessor(unittest.TestCase):
 
         print("test_preprocessor_con_BucketFS: OK")  
 
+    @pytest.mark.run(order=5)
     def test_preprocessor_con_local(self):
 
         # Test save 
@@ -109,6 +116,8 @@ class test_preprocessor(unittest.TestCase):
 
         print("test_preprocessor_con_local: OK")
 
+    @pytest.mark.run(order=6)
+    @pytest.mark.skip
     def test_preprocessor_cat_BucketFS(self):
 
         # Test save 
@@ -128,6 +137,7 @@ class test_preprocessor(unittest.TestCase):
 
         print("test_preprocessor_cat_BucketFS: OK")  
 
+    @pytest.mark.run(order=7)
     def test_preprocessor_cat_local(self):
 
         # Test save 
@@ -153,6 +163,6 @@ if __name__ == "__main__":
     test.test_preprocessor_local()
     test.test_preprocessor_con_local()
     test.test_preprocessor_cat_local()
-    # test.test_preprocessor_BucketFS()
-    # test.test_preprocessor_con_BucketFS()
-    # test.test_preprocessor_cat_BucketFS()
+    test.test_preprocessor_BucketFS()
+    test.test_preprocessor_con_BucketFS()
+    test.test_preprocessor_cat_BucketFS()

@@ -5,9 +5,9 @@ name: CI
 
 on:
   push:
-    branches: [ "main","test" ]
+    branches: [ "main"]
   pull_request:
-    branches: [ "main","test" ]
+    branches: [ "main"]
 
 jobs:
   build:
@@ -44,11 +44,4 @@ jobs:
     - name: Test with pytest
       id: pytest
       run: |
-        pytest
-
-    - name: Push changes
-      if: success()
-      run: |
-        git config --global user.email "action@github.com"
-        git config --global user.name "GitHub Actions"
-        git push origin ${{ github.ref }}
+        pytest -k "not skip"
