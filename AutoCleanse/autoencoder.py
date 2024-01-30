@@ -190,6 +190,7 @@ class Autoencoder(nn.Module):
                 print("Early stopping triggered. Stopping training.")
                 break
             train_progress.close()
+            val_progress.close()
         
     def save(self,location,name=None):
         self.load_state_dict(self.best_state_dict)
