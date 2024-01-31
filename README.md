@@ -1,9 +1,10 @@
 # AutoCleanse
 
-An autoencoder-based tool for processing and augmentating tabular data of mixed numerical and categorical data type, including:
+A deeplearning-based tool for preprocessing and augmentating tabular data of mixed numerical and categorical data type, including:
 - Data cleaning and imputation
 - Data anonymization
-- Customizable weighted loss for 
+- Data reconstruction
+- Customizable weighted loss function for dataset-wise performance tuning
 - Outlier detection 
-- Test suite
+- Evaluation suite
 
