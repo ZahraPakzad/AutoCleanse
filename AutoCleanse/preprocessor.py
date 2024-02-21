@@ -64,14 +64,14 @@ class Preprocessor():
       input_df.drop(columns=categorical_columns, inplace=True)
 
     # Handle NaN in categorical columns
-    nan_columns = [col for col in input_df.columns if '_nan' in col]
+    nan_columns = [col for col in categorical_columns if '_nan' in col]
     input_df.drop(columns=nan_columns, inplace=True)
 
     # Handle NaN in continous columns
     # input_df.fillna(generate_random_spike(1000, 10000), inplace=True)
-    nan_indices = input_df.apply(lambda col: col.index[col.isna()].tolist())
-    nan_indices = [item for sublist in nan_indices for item in sublist]  # Flatten the list
-    input_df.loc[nan_indices] = input_df.loc[nan_indices].applymap(lambda x: generate_random_spike(1000, 10000) if pd.isna(x) else x)
+    for col in continous_columns:
+      nan_indices = input_df[col].index[input_df[col].isna()]
+      input_df.loc[nan_indices, col] = [generate_random_spike(0,100) for _ in range(len(nan_indices))]
 
     return input_df
 
