@@ -86,17 +86,28 @@ def replace_with_nan(dataframe, ratio, seed):
         raise ValueError("Ratio must be between 0 and 1.")
     np.random.seed(seed)
     
+    df = dataframe.copy()
     # Calculate the number of elements to replace with NaN
-    num_elements_to_replace = int(dataframe.size * ratio)
+    num_elements_to_replace = int(df.size * ratio)
 
     # Flatten the DataFrame and select random positions to replace with NaN
-    flat_data = dataframe.to_numpy().flatten()
+    flat_data = df.to_numpy().flatten()
     indices_to_replace = np.random.choice(flat_data.size, num_elements_to_replace, replace=False)
     flat_data[indices_to_replace] = np.nan
 
     # Reshape the flat data back to the original shape
-    dataframe[:] = flat_data.reshape(dataframe.shape)
-    return dataframe
+    df[:] = flat_data.reshape(df.shape)
+    return df
+
+def generate_random_spike(a, b):
+    # Generate a random value in the range [a, b]
+    random_value = np.random.uniform(a, b)
+
+    # Determine whether to negate the value
+    if np.random.choice([True, False]):
+        random_value *= -1
+
+    return random_value
 
 def string2list(input: str):
     output = list(map(int, input.split(',')))

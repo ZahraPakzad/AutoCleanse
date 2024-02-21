@@ -43,7 +43,7 @@ X_train,X_val,X_test = preprocessor.split(df=X,
                                         val_ratio=0.15,
                                         test_ratio=0.15,
                                         random_seed=42)
-X_dirty = replace_with_nan(X_test,0,42)
+X_dirty = inject_noise(X_test,0,42)
 
 X_train = preprocessor.fit_transform(input_df=X_train,
                                     continous_columns=continous_columns,
@@ -72,7 +72,7 @@ y_train,y_val,y_test = preprocessor.split(df=y,
                                         val_ratio=0.15,
                                         test_ratio=0.15,
                                         random_seed=42)
-y_dirty = replace_with_nan(y_test,0,42)
+y_dirty = inject_noise(y_test,0,42)
                       
 y_encoder = OneHotEncoder(sparse=False)
 y_train = pd.DataFrame(y_encoder.fit_transform(y_train),columns=y_encoder.get_feature_names_out(target_columns),index=y_train.index)
