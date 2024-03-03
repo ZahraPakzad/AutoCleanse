@@ -3,3 +3,4 @@
 df_cleaned.csv
 AutoCleanse/bucketfs_caller.py
 AutoCleanse/__pycache__/*
+AutoCleanse/test/__pycache__/*

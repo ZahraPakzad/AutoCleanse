@@ -13,7 +13,7 @@ from torch.optim.lr_scheduler import StepLR
 @pytest.fixture
 def autoencoder_fixture():
     df = pd.DataFrame({'Numerical': [11,22,33,44,55,66,77,88,99,00], 'Categorical': ['A','C','B','A','D','C','B','D','D','C']})
-    preprocessor = Preprocessor(scaler=MinMaxScaler(), encoder=OneHotEncoder(sparse=False))
+    preprocessor = Preprocessor(scaler=MinMaxScaler(), encoder=OneHotEncoder(sparse_output=False))
     train_set, val_set, test_set = preprocessor.split(df, 0.6, 0.2, 0.2, 42)
     X_train = preprocessor.fit_transform(input_df=train_set, continous_columns=['Numerical'], categorical_columns=['Categorical'])
     X_val = preprocessor.transform(input_df=val_set, continous_columns=['Numerical'], categorical_columns=['Categorical'])

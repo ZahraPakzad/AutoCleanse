@@ -12,7 +12,7 @@ data = {'Numerical': [11, 22, 33, 44, 55, 66, 77, 88, 99, 00],
 
 @pytest.fixture
 def preprocessor_fixture():
-    return Preprocessor(scaler=MinMaxScaler(), encoder=OneHotEncoder(sparse=False))
+    return Preprocessor(scaler=MinMaxScaler(), encoder=OneHotEncoder(sparse_output=False))
 
 @pytest.mark.preprocessor
 def test_split(preprocessor_fixture):
@@ -42,7 +42,7 @@ def test_preprocessor_BucketFS(preprocessor_fixture):
     assert bucketfs_client.check(f"preprocessor/preprocessor_test1.pkl")
 
     # Test load
-    preprocessor2 = Preprocessor(scaler=MinMaxScaler(), encoder=OneHotEncoder(sparse=False))
+    preprocessor2 = Preprocessor(scaler=MinMaxScaler(), encoder=OneHotEncoder(sparse_output=False))
     preprocessor2.load("test1", "bucketfs")
     df_test = preprocessor2.transform(
         input_df=df,
@@ -69,7 +69,7 @@ def test_preprocessor_local(preprocessor_fixture):
     assert os.path.exists(f"preprocessor_test.pkl")
 
     # Test load
-    preprocessor2 = Preprocessor(scaler=MinMaxScaler(), encoder=OneHotEncoder(sparse=False))
+    preprocessor2 = Preprocessor(scaler=MinMaxScaler(), encoder=OneHotEncoder(sparse_output=False))
     preprocessor2.load("test", "local")
     df_test = preprocessor2.transform(
         input_df=df,
@@ -96,7 +96,7 @@ def test_preprocessor_con_BucketFS(preprocessor_fixture):
     assert bucketfs_client.check(f"preprocessor/preprocessor_test2.pkl")
 
     # Test load
-    preprocessor2 = Preprocessor(scaler=MinMaxScaler(), encoder=OneHotEncoder(sparse=False))
+    preprocessor2 = Preprocessor(scaler=MinMaxScaler(), encoder=OneHotEncoder(sparse_output=False))
     preprocessor2.load("test2", "bucketfs")
     df_test = preprocessor2.transform(
         input_df=df,
@@ -121,7 +121,7 @@ def test_preprocessor_con_local(preprocessor_fixture):
     assert os.path.exists(f"preprocessor_test.pkl")
 
     # Test load
-    preprocessor2 = Preprocessor(scaler=MinMaxScaler(), encoder=OneHotEncoder(sparse=False))
+    preprocessor2 = Preprocessor(scaler=MinMaxScaler(), encoder=OneHotEncoder(sparse_output=False))
     preprocessor2.load("test", "local")
     df_test = preprocessor2.transform(
         input_df=df,
@@ -147,7 +147,7 @@ def test_preprocessor_cat_BucketFS(preprocessor_fixture):
     assert bucketfs_client.check(f"preprocessor/preprocessor_test3.pkl")
 
     # Test load
-    preprocessor2 = Preprocessor(scaler=MinMaxScaler(), encoder=OneHotEncoder(sparse=False))
+    preprocessor2 = Preprocessor(scaler=MinMaxScaler(), encoder=OneHotEncoder(sparse_output=False))
     preprocessor2.load("test3", "bucketfs")
     df_test = preprocessor2.transform(
         input_df=df,
@@ -172,7 +172,7 @@ def test_preprocessor_cat_local(preprocessor_fixture):
     assert os.path.exists(f"preprocessor_test.pkl")
 
     # Test load
-    preprocessor2 = Preprocessor(scaler=MinMaxScaler(), encoder=OneHotEncoder(sparse=False))
+    preprocessor2 = Preprocessor(scaler=MinMaxScaler(), encoder=OneHotEncoder(sparse_output=False))
     preprocessor2.load("test", "local")
     df_test = preprocessor2.transform(
         input_df=df,

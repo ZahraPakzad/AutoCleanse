@@ -55,6 +55,12 @@ class Preprocessor():
     if (continous_columns is not None):      
       input_df_scaled = self.scaler.transform(input_df[continous_columns])
       input_df[continous_columns] = input_df_scaled
+
+      # Handle NaN in continous columns
+      # input_df.fillna(generate_random_spike(1000, 10000), inplace=True)
+      for col in continous_columns:
+        nan_indices = input_df[col].index[input_df[col].isna()]
+        input_df.loc[nan_indices, col] = [generate_random_spike(0,100) for _ in range(len(nan_indices))]
         
     # Preprocess categorical columns
     if (categorical_columns is not None):
@@ -63,15 +69,9 @@ class Preprocessor():
       input_df = pd.concat([input_df,input_df_encoded_part],axis=1)
       input_df.drop(columns=categorical_columns, inplace=True)
 
-    # Handle NaN in categorical columns
-    nan_columns = [col for col in categorical_columns if '_nan' in col]
-    input_df.drop(columns=nan_columns, inplace=True)
-
-    # Handle NaN in continous columns
-    # input_df.fillna(generate_random_spike(1000, 10000), inplace=True)
-    for col in continous_columns:
-      nan_indices = input_df[col].index[input_df[col].isna()]
-      input_df.loc[nan_indices, col] = [generate_random_spike(0,100) for _ in range(len(nan_indices))]
+      # Handle NaN in categorical columns
+      nan_columns = [col for col in categorical_columns if '_nan' in col]
+      input_df.drop(columns=nan_columns, inplace=True)
 
     return input_df
 
