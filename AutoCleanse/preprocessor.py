@@ -2,15 +2,19 @@ import pandas as pd
 import io
 import joblib
 import time
+import random
 from sklearn.model_selection import train_test_split
 from sklearn.base import clone
 from AutoCleanse.bucketfs_client import bucketfs_client
 from AutoCleanse.utils import *
+from ordered_set import OrderedSet
 
 class Preprocessor():
-  def __init__(self, scaler, encoder):
+  def __init__(self, scaler, encoder, continous_columns, categorical_columns):
     self.scaler = clone(scaler)
     self.encoder = clone(encoder)
+    self.continous_columns = continous_columns
+    self.categorical_columns = categorical_columns
 
   def split(self,df,train_ratio: float,val_ratio: float,test_ratio: float,random_seed: float):
       # Calculate the sizes of train, validation, and test sets
@@ -31,18 +35,18 @@ class Preprocessor():
       df_val, df_test = train_test_split(temp, test_size=test_size, random_state=random_seed)
       return df_train,df_val,df_test
 
-  def fit_transform(self,input_df,continous_columns=None,categorical_columns=None):
+  def fit_transform(self,input_df):
     # Preprocess continous columns
-    if (continous_columns is not None):      
-      input_df_scaled = self.scaler.fit_transform(input_df[continous_columns])
-      input_df[continous_columns] = input_df_scaled
+    if (self.continous_columns is not None):      
+      input_df_scaled = self.scaler.fit_transform(input_df[self.continous_columns])
+      input_df[self.continous_columns] = input_df_scaled
         
     # Preprocess categorical columns
-    if (categorical_columns is not None):
-      input_df_encoded = self.encoder.fit_transform(input_df[categorical_columns])  
-      input_df_encoded_part = pd.DataFrame(input_df_encoded, columns=self.encoder.get_feature_names_out(categorical_columns),index=input_df.index)
+    if (self.categorical_columns is not None):
+      input_df_encoded = self.encoder.fit_transform(input_df[self.categorical_columns])  
+      input_df_encoded_part = pd.DataFrame(input_df_encoded, columns=self.encoder.get_feature_names_out(self.categorical_columns),index=input_df.index)
       input_df = pd.concat([input_df,input_df_encoded_part],axis=1)
-      input_df.drop(columns=categorical_columns, inplace=True)
+      input_df.drop(columns=self.categorical_columns, inplace=True)
 
     nan_columns = [col for col in input_df.columns if '_nan' in col]
     input_df.drop(columns=nan_columns, inplace=True)
@@ -50,27 +54,73 @@ class Preprocessor():
 
     return input_df
 
-  def transform(self,input_df,continous_columns=None,categorical_columns=None):
+  def transform(self,input_df):
     # Preprocess continous columns
-    if (continous_columns is not None):      
-      input_df_scaled = self.scaler.transform(input_df[continous_columns])
-      input_df[continous_columns] = input_df_scaled
+    if (self.continous_columns is not None):      
+      input_df_scaled = self.scaler.transform(input_df[self.continous_columns])
+      input_df[self.continous_columns] = input_df_scaled
 
       # Handle NaN in continous columns
       # input_df.fillna(generate_random_spike(1000, 10000), inplace=True)
-      for col in continous_columns:
+      
+      for col in self.continous_columns:
+        # nan_indices = input_df[col].index[input_df[col].isna()]
+        # input_df.loc[nan_indices, col] = [generate_random_spike(0,100) for _ in range(len(nan_indices))]
         nan_indices = input_df[col].index[input_df[col].isna()]
-        input_df.loc[nan_indices, col] = [generate_random_spike(0,100) for _ in range(len(nan_indices))]
+        df_nonNA = input_df[input_df[col].notna()]
+
+        nonNAN_values = list(df_nonNA[col]) # values of nonNAN
+        
+
+        # binning the values
+        NUM_BINS = 10000  
+        bins = pd.cut(nonNAN_values, NUM_BINS, labels = list(range(0, NUM_BINS)))
+
+  
+        bins_frequency = {}
+        for item in bins:
+          for i in range(0, NUM_BINS):
+            if item == i:
+              if i in bins_frequency:
+                bins_frequency[i] += 1
+              else:
+                bins_frequency[i] = 1
+              break
+
+        # random selection of bins
+        population = OrderedSet(bins)
+        weights = [v/len(bins) for k, v in bins_frequency.items()]
+        k = len(nan_indices)
+
+        selected_bins = random.choices(population, weights, k=k)
+
+        # make a dictionary where the bin numbers are the dictionary keys and the values
+        # of each bin is listed as the dictionary's value.
+        dict_bins = {}
+
+        for item in zip(bins, nonNAN_values):
+          if item[0] in dict_bins:
+            dict_bins[item[0]].append(int(item[1]))
+          else:
+            dict_bins[item[0]] = [item[1]]
+
+        for i in range(0, len(selected_bins)):
+          random_value = random.choices(dict_bins[selected_bins[i]])
+          input_df.loc[nan_indices[i], col] = random_value[0]
+
+
+
+
         
     # Preprocess categorical columns
-    if (categorical_columns is not None):
-      input_df_encoded = self.encoder.transform(input_df[categorical_columns])
-      input_df_encoded_part = pd.DataFrame(input_df_encoded, columns=self.encoder.get_feature_names_out(categorical_columns),index=input_df.index)
+    if (self.categorical_columns is not None):
+      input_df_encoded = self.encoder.transform(input_df[self.categorical_columns])
+      input_df_encoded_part = pd.DataFrame(input_df_encoded, columns=self.encoder.get_feature_names_out(self.categorical_columns),index=input_df.index)
       input_df = pd.concat([input_df,input_df_encoded_part],axis=1)
-      input_df.drop(columns=categorical_columns, inplace=True)
+      input_df.drop(columns=self.categorical_columns, inplace=True)
 
       # Handle NaN in categorical columns
-      nan_columns = [col for col in categorical_columns if '_nan' in col]
+      nan_columns = [col for col in self.categorical_columns if '_nan' in col]
       input_df.drop(columns=nan_columns, inplace=True)
 
     return input_df
