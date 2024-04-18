@@ -7,7 +7,7 @@ from collections import Counter
 from exasol.bucketfs import Service
 from tqdm import tqdm
 from AutoCleanse.loss_model import loss_CEMSE
-from AutoCleanse.bucketfs_client import bucketfs_client
+from AutoCleanse.bucketfs_client import BucketFSClient
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from sklearn.dummy import DummyClassifier
 from sklearn.model_selection import cross_val_score, RepeatedStratifiedKFold
@@ -170,7 +170,7 @@ class ClsNNBase(nn.Module):
             buffer = io.BytesIO()
             torch.save(self.state_dict(), buffer)
             try:
-                bucketfs_client().upload(f'autoencoder/{name}', buffer)
+                BucketFSClient().upload(f'autoencoder/{name}', buffer)
             except Exception as e:
                 raise RuntimeError(f"Failed saving {name} to BucketFS") from e
             print(f'Saved weight to default/autoencoder/{name}')
@@ -186,7 +186,7 @@ class ClsNNBase(nn.Module):
         name = f'ClsNNBase_{name}.pth'
         if (location=="bucketfs"):
             try:
-                weight = bucketfs_client().download(f'autoencoder/{name}')
+                weight = BucketFSClient().download(f'autoencoder/{name}')
             except Exception as e:
                 raise RuntimeError(f"Failed loading {name} from BucketFS") from e
             print(f'Loaded weight from default/autoencoder/{name}')
