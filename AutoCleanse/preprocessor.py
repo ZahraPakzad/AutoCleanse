@@ -5,7 +5,7 @@ import time
 import random
 from sklearn.model_selection import train_test_split
 from sklearn.base import clone
-from AutoCleanse.bucketfs_client import bucketfs_client
+from AutoCleanse.bucketfs_client import BucketFSClient
 from AutoCleanse.utils import *
 from ordered_set import OrderedSet
 
@@ -125,20 +125,21 @@ class Preprocessor():
 
     return input_df
 
-  def save(self,name,location):
+  def save(self,name,location,**kwargs):
     if (location=="local"):
       try:
         joblib.dump(self,f'preprocessor_{name}.pkl')
       except Exception as e:
         raise RuntimeError(f"Failed saving preprocessor_{name}.pkl to local") from e
     elif (location=="bucketfs"):
+      bucketfs_client = BucketFSClient(kwargs['url'],kwargs['bucket'],kwargs['user'],kwargs['password'])
       buffer = io.BytesIO()
       joblib.dump(self,buffer)
       max_retries = 3
       delay = 3
       for attempt in range(max_retries):
         try:
-          bucketfs_client().upload(f'preprocessor/preprocessor_{name}.pkl',buffer)
+          bucketfs_client.upload(f'preprocessor/preprocessor_{name}.pkl',buffer)
           break
         except Exception as e:
           print(f"Upload attempt {attempt + 1} failed. Retrying...\n")
@@ -146,7 +147,7 @@ class Preprocessor():
             raise RuntimeError(f"Failed saving preprocessor_{name}.pkl to BucketFS") from e
           time.sleep(delay)
 
-  def load(self,name,location):
+  def load(self,name,location,**kwargs):
     if (location=="local"):
       try:
         loaded_preprocessor = joblib.load(f'preprocessor_{name}.pkl')
@@ -155,7 +156,8 @@ class Preprocessor():
       except Exception as e:
         raise RuntimeError(f"Failed loading preprocessor_{name}.pkl from local") from e
     elif (location=="bucketfs"):
-      data = bucketfs_client().download(f'preprocessor/preprocessor_{name}.pkl')
+      bucketfs_client = BucketFSClient(kwargs['url'],kwargs['bucket'],kwargs['user'],kwargs['password'])
+      data = bucketfs_client.download(f'preprocessor/preprocessor_{name}.pkl')
       try:
         loaded_preprocessor = joblib.load(data)
         self.scaler = loaded_preprocessor.scaler

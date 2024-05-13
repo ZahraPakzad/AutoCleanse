@@ -38,20 +38,20 @@ def test_preprocessor_BucketFS(preprocessor_fixture):
         continous_columns=['Numerical'],
         categorical_columns=['Categorical']
     )
-    preprocessor_fixture.save("test1", "bucketfs")
-    assert bucketfs_client.check(f"preprocessor/preprocessor_test1.pkl")
+    preprocessor_fixture.save("test1", "bucketfs", url="http://172.18.0.2:6583", bucket="default", user="w", password="write")
+    assert BucketFSClient.check(f"preprocessor/preprocessor_test1.pkl")
 
     # Test load
     preprocessor2 = Preprocessor(scaler=MinMaxScaler(), encoder=OneHotEncoder(sparse_output=False))
-    preprocessor2.load("test1", "bucketfs")
+    preprocessor2.load("test1", "bucketfs", url="http://172.18.0.2:6583", bucket="default", user="w", password="write")
     df_test = preprocessor2.transform(
         input_df=df,
         continous_columns=['Numerical'],
         categorical_columns=['Categorical']
     )
 
-    if bucketfs_client.check(f"preprocessor/preprocessor_test1.pkl"):
-        bucketfs_client.delete(f"/preprocessor/preprocessor_test1.pkl")
+    if BucketFSClient.check(f"preprocessor/preprocessor_test1.pkl"):
+        BucketFSClient.delete(f"/preprocessor/preprocessor_test1.pkl")
 
     print("test_preprocessor_BucketFS: OK")
 
@@ -92,19 +92,19 @@ def test_preprocessor_con_BucketFS(preprocessor_fixture):
         input_df=df,
         continous_columns=['Numerical']
     )
-    preprocessor_fixture.save("test2", "bucketfs")
-    assert bucketfs_client.check(f"preprocessor/preprocessor_test2.pkl")
+    preprocessor_fixture.save("test2", "bucketfs", url="http://172.18.0.2:6583", bucket="default", user="w", password="write")
+    assert BucketFSClient.check(f"preprocessor/preprocessor_test2.pkl")
 
     # Test load
     preprocessor2 = Preprocessor(scaler=MinMaxScaler(), encoder=OneHotEncoder(sparse_output=False))
-    preprocessor2.load("test2", "bucketfs")
+    preprocessor2.load("test2", "bucketfs", url="http://172.18.0.2:6583", bucket="default", user="w", password="write")
     df_test = preprocessor2.transform(
         input_df=df,
         continous_columns=['Numerical']
     )
 
-    if bucketfs_client.check(f"preprocessor/preprocessor_test2.pkl"):
-        bucketfs_client.delete(f"preprocessor/preprocessor_test2.pkl")
+    if BucketFSClient.check(f"preprocessor/preprocessor_test2.pkl"):
+        BucketFSClient.delete(f"preprocessor/preprocessor_test2.pkl")
 
     print("test_preprocessor_con_BucketFS: OK")
 
@@ -143,19 +143,19 @@ def test_preprocessor_cat_BucketFS(preprocessor_fixture):
         input_df=df,
         categorical_columns=['Categorical']
     )
-    preprocessor_fixture.save("test3", "bucketfs")
-    assert bucketfs_client.check(f"preprocessor/preprocessor_test3.pkl")
+    preprocessor_fixture.save("test3", "bucketfs", url="http://172.18.0.2:6583", bucket="default", user="w", password="write")
+    assert BucketFSClient.check(f"preprocessor/preprocessor_test3.pkl")
 
     # Test load
     preprocessor2 = Preprocessor(scaler=MinMaxScaler(), encoder=OneHotEncoder(sparse_output=False))
-    preprocessor2.load("test3", "bucketfs")
+    preprocessor2.load("test3", "bucketfs", url="http://172.18.0.2:6583", bucket="default", user="w", password="write")
     df_test = preprocessor2.transform(
         input_df=df,
         categorical_columns=['Categorical']
     )
 
-    if bucketfs_client.check(f"preprocessor/preprocessor_test3.pkl"):
-        bucketfs_client.delete(f"/preprocessor/preprocessor_test3.pkl")
+    if BucketFSClient.check(f"preprocessor/preprocessor_test3.pkl"):
+        BucketFSClient.delete(f"/preprocessor/preprocessor_test3.pkl")
 
     print("test_preprocessor_cat_BucketFS: OK")
 

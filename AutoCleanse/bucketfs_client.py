@@ -7,70 +7,62 @@ from exasol.bucketfs import (
     as_string,
 )
 
-class bucketfs_client():
+class BucketFSClient:
     """
         @brief Provide client API to interact with BucketFS
-    """
-    url = "http://172.18.0.2:6583" # Change this to your script language container IP
-    cred = {"default":{"username":"w","password":"write"}}
-    is_available = True
-    
+    """    
     @classmethod
-    def init(cls):
-        try:
-            cls.bucketfs = Service(cls.url, cls.cred)
-            cls.bucket = cls.bucketfs["default"]
+    def __init__(self, url: str, bucket: str, user: str, password: str):
+        self.url = url
+        self.cred = {bucket: {"username": user, "password": password}}
+        try:            
+            self.bucketfs = Service(self.url, self.cred)
+            self.bucket = self.bucketfs["default"]
         except Exception as e:
-            print(f"Warning: Connection to bucketfs_client {cls.url} under user {cls.cred['default']['username']} failed")
-            cls.is_available = False
+            print(f"Warning: Connection to bucketfs_client {self.url} under user {self.cred['default']['username']} failed")            
     
     @classmethod
-    def upload(cls,file_path,buffer):
+    def upload(self,file_path,buffer):
         """
          @brief Upload file to BucketFS
          @param file_path: Full path and file name in BucketFS
          @parm buffer: Buffer object containing data to upload
         """       
-        cls.init()
         buffer.seek(0)             
-        cls.bucket.upload(file_path, buffer)
+        self.bucket.upload(file_path, buffer)
 
     @classmethod
-    def download(cls,file_path):
+    def download(self,file_path):
         """
          @brief Download file to BucketFS
          @param file_path: Full path and file name in BucketFS
         """
-        cls.init()
-        data = io.BytesIO(as_bytes(cls.bucket.download(file_path)))
+        data = io.BytesIO(as_bytes(self.bucket.download(file_path)))
         return data
 
     @classmethod
-    def check(cls,file_path):
+    def check(self,file_path):
         """
          @brief Check if file is in BucketFS
          @param file_path: Full path and file name in BucketFS
         """
-        cls.init()
-        for file in cls.bucket:
+        for file in self.bucket:
             if (file == file_path):
                 return True
         return False
 
     @classmethod
-    def delete(cls,file_path):
+    def delete(self,file_path):
         """
          @brief Delete file in BucketFS
          @param file_path: Full path and file name in BucketFS
         """
-        cls.init()
-        cls.bucket.delete(file_path)
+        self.bucket.delete(file_path)
 
     @classmethod
-    def view(cls):
+    def view(self):
         """
          @brief View all files in BucketFS
         """
-        cls.init()
-        for file in cls.bucket:
+        for file in self.bucket:
             print(file)

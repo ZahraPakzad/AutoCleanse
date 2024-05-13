@@ -1,12 +1,11 @@
 AutoCleanse @ git+https://github.com/tungsontran/AutoCleanse.git@main#egg=AutoCleanse
 exasol-transformers-extension @ git+https://github.com/tungsontran/transformers-extension.git@main#egg=exasol-transformers-extension
-setuptools==68.2.2
-tokenizers==0.15.1
-datasets==2.16.1
-transformers==4.37.0
-exasol-bucketfs==0.6.0
-torch==2.1.1
-torchsummary==1.5.1
+setuptools>=68.2.2
+tokenizers>=0.15.1
+datasets>=2.16.1
+transformers>=4.38.2
+exasol-bucketfs>=0.6.0
+torch>=2.1.1
+torchsummary>=1.5.1
 scikit-learn>=1.2.0
-scipy==1.10.1
-ordered_set==4.1.0
+scipy>=1.10.1

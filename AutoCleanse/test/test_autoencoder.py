@@ -93,10 +93,10 @@ def test_load_local(autoencoder_fixture):
 @pytest.mark.run(order=5)
 @pytest.mark.bucketfs
 def test_save_bucketfs(autoencoder_fixture):
-    autoencoder_fixture['autoencoder'].save("bucketfs","test")
+    autoencoder_fixture['autoencoder'].save("bucketfs","test",url="http://172.18.0.2:6583",bucket="default",user="w",password="write")
 
 @pytest.mark.autoencoder
 @pytest.mark.run(order=6)
 @pytest.mark.bucketfs
 def test_load_bucketfs(autoencoder_fixture):
-    autoencoder_fixture['autoencoder'].load("bucketfs","test")
+    autoencoder_fixture['autoencoder'].load("bucketfs","test",url="http://172.18.0.2:6583",bucket="default",user="w",password="write")

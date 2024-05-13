@@ -1,6 +1,5 @@
 **.pth
 **.pkl
 df_cleaned.csv
-AutoCleanse/bucketfs_caller.py
-AutoCleanse/__pycache__/*
-AutoCleanse/test/__pycache__/*
+*/bucketfs_caller.py
+**/__pycache__/**

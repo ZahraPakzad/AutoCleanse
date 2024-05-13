@@ -6,7 +6,7 @@ import torch.nn.functional as F
 
 from tqdm import tqdm
 from torch.optim.lr_scheduler import *
-from AutoCleanse.bucketfs_client import bucketfs_client
+from AutoCleanse.bucketfs_client import BucketFSClient
 from AutoCleanse.utils import *
 from AutoCleanse.loss_model import loss_CEMSE
 
@@ -192,7 +192,7 @@ class Autoencoder(nn.Module):
             train_progress.close()
             val_progress.close()
         
-    def save(self,location,name=None):
+    def save(self,location,name=None,**kwargs):
         self.load_state_dict(self.best_state_dict)
         if (name is None):
             layers_str = '_'.join(str(item) for item in self.layers) 
@@ -201,10 +201,11 @@ class Autoencoder(nn.Module):
         else:
             name = f'autoencoder_{name}.pth'
         if (location=="bucketfs"):
+            bucketfs_client = BucketFSClient(kwargs['url'],kwargs['bucket'],kwargs['user'],kwargs['password'])
             buffer = io.BytesIO()
             torch.save(self.state_dict(), buffer)
             try:
-                bucketfs_client().upload(f'autoencoder/{name}',buffer)
+                bucketfs_client.upload(f'autoencoder/{name}',buffer)
             except Exception as e:
                 raise RuntimeError(f"Failed saving {name} to BucketFS") from e
             print(f'Saved weight to default/autoencoder/{name}')
@@ -215,12 +216,13 @@ class Autoencoder(nn.Module):
                 raise RuntimeError(f"Failed saving {name} to local") from e
             print(f'Saved weight to {name}')
 
-    def load(self,location,name=None):
+    def load(self,location,name=None,**kwargs):
         weight = None 
         name = f"autoencoder_{name}.pth"           
         if (location=="bucketfs"):
+            bucketfs_client = BucketFSClient(kwargs['url'],kwargs['bucket'],kwargs['user'],kwargs['password'])
             try:
-                weight = bucketfs_client().download(f'autoencoder/{name}')
+                weight = bucketfs_client.download(f'autoencoder/{name}')
             except Exception as e:
                 raise RuntimeError(f"Failed loading {name} from BucketFS") from e
             print(f'Loaded weight from default/autoencoder/{name}')
