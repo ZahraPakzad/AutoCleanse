@@ -17,7 +17,7 @@ def loss_CEMSE(input, outputs, categories, continous_columns=[], categorical_col
     slice_list = []
     
     if (len(categorical_columns)!=0 and len(continous_columns)!=0):
-        column_map = {column: categories[i] for i, column in enumerate(categorical_columns)} # Map categorical columns with onehot subcolumns
+        column_map = {column: categories[i] for i, column in enumerate(categorical_columns)} # Map categorical columns with onehot subcolumn
         output_categorical = outputs[:,len(continous_columns):]
         output_continous = outputs[:,:len(continous_columns)]
         for i in list(column_map):
@@ -47,7 +47,7 @@ def loss_CEMSE(input, outputs, categories, continous_columns=[], categorical_col
             end_index_1h = start_index_1h + size
             end_index = start_index + size
             Catcols[f"_{i}"] = output_categorical[:,start_index_1h:end_index_1h]
-            CElosses[f"_{i}"] = nn.CrossEntropyLoss()(Catcols[f"_{i}"],torch.argmax(input[:,start_index:end_index],dim=1)) # Averaged over minibatch
+            CElosses[f"_{i}"] = nn.CrossEntropyLoss()(Catcols[f"_{i}"],torch.argmax(input[:,start_index:end_index],dim=1)) # Averaged over minibatch 
             start_index_1h = end_index_1h
             start_index = end_index
         
@@ -58,8 +58,12 @@ def loss_CEMSE(input, outputs, categories, continous_columns=[], categorical_col
 
     MSEloss = 0
     if (len(continous_columns)!=0):
-        MSEloss = nn.MSELoss()(output_continous, input[:,:len(continous_columns)])
-    else:
-        pass        
 
-    return CEloss,MSEloss
+        MSEloss = nn.MSELoss()(outputs[:,:len(continous_columns)], input[:,:len(continous_columns)]) 
+
+    else:
+        pass  
+    
+    return CEloss,MSEloss 
+
+    
